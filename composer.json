@@ -1,0 +1,42 @@
+{
+    "name": "shipperhq/shipping-rates",
+    "description": "ShipperHQ shipping rates calculator for Shopware",
+    "version": "1.0.0",
+    "type": "shopware-platform-plugin",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "ShipperHQ",
+            "homepage": "https://shipperhq.com"
+        }
+    ],
+    "require": {
+        "shopware/core": "~6.6.0"
+    },
+    "extra": {
+        "shopware-plugin-class": "SHQ\\RateProvider\\SHQRateProvider",
+        "plugin-icon": "src/Resources/config/plugin.png",
+        "copyright": "ShipperHQ",
+        "label": {
+            "de-DE": "ShipperHQ Versandkosten",
+            "en-GB": "ShipperHQ Shipping Rates"
+        },
+        "description": {
+            "de-DE": "Berechnet Versandkosten mit ShipperHQ",
+            "en-GB": "Calculate shipping rates with ShipperHQ"
+        },
+        "manufacturerLink": {
+            "de-DE": "https://shipperhq.com",
+            "en-GB": "https://shipperhq.com"
+        },
+        "supportLink": {
+            "de-DE": "https://shipperhq.com/support",
+            "en-GB": "https://shipperhq.com/support"
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "SHQ\\RateProvider\\": "src/"
+        }
+    }
+}
