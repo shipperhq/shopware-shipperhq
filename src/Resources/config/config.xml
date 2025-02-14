@@ -2,13 +2,25 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/shopware/platform/trunk/src/Core/System/SystemConfig/Schema/config.xsd">
     <card>
-        <title>Debug Settings</title>
-        <title lang="de-DE">Debug-Einstellungen</title>
+        <title>API Settings</title>
+        <title lang="de-DE">API-Einstellungen</title>
         
-        <input-field type="bool">
-            <name>debugMode</name>
-            <label>Enable Debug Mode</label>
-            <label lang="de-DE">Debug-Modus aktivieren</label>
+        <input-field type="text">
+            <name>apiKey</name>
+            <label>API Key</label>
+            <label lang="de-DE">API-Schlüssel</label>
+            <help-text>Enter your ShipperHQ API key here</help-text>
+            <help-text lang="de-DE">Geben Sie hier Ihren ShipperHQ API-Schlüssel ein</help-text>
+            <required>true</required>
+        </input-field>
+
+        <input-field type="text">
+            <name>apiEndpoint</name>
+            <label>API Endpoint</label>
+            <label lang="de-DE">API-Endpunkt</label>
+            <defaultValue>https://api.shipperhq.com/v2/graphql</defaultValue>
+            <help-text>ShipperHQ API endpoint URL</help-text>
+            <help-text lang="de-DE">ShipperHQ API-Endpunkt URL</help-text>
         </input-field>
     </card>
-</config> 
+</config>

@@ -2,69 +2,56 @@
 
 namespace SHQ\RateProvider\Service;
 
-use Shopware\Core\System\SalesChannel\SalesChannelContext;
-use Shopware\Core\Checkout\Cart\Cart;
-use Shopware\Core\Framework\Struct\ArrayStruct;
+use Psr\Log\LoggerInterface;
+use Shopware\Core\System\SystemConfig\SystemConfigService;
+use Shopware\Core\Checkout\Shipping\ShippingMethodEntity;
+use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
+use ShipperHQ\GraphQL\Client\GraphQLClient;
 
 class ShippingRateCalculator
 {
-    public function calculate(SalesChannelContext $context): array
+    private SystemConfigService $systemConfig;
+    private LoggerInterface $logger;
+    private ShipperHQApiClient $apiClient;
+
+    public function __construct(
+        SystemConfigService $systemConfig,
+        LoggerInterface $logger,
+        ShipperHQApiClient $apiClient
+    ) {
+        $this->systemConfig = $systemConfig;
+        $this->logger = $logger;
+        $this->apiClient = $apiClient;
+    }
+
+    public function calculateRate(string $shippingMethodId, array $context): ?float
     {
-        $cart = $context->getCart();
-        $cartTotal = $cart->getPrice()->getTotalPrice();
-        
-        // Debug logging
-        file_put_contents(
-            'var/log/shipping-debug.log',
-            sprintf(
-                "[%s] Calculate called - Cart Total: %s\n",
-                date('Y-m-d H:i:s'),
-                $cartTotal
-            ),
-            FILE_APPEND
-        );
-        
-        // Here you would typically make an API call to ShipperHQ
-        // For now, we'll use conditional logic based on cart total
-        $rates = [];
-        
-        // Basic shipping for orders under $50
-        if ($cartTotal < 50) {
-            $rates[] = [
-                'name' => 'Standard Ground',
-                'price' => 9.99,
-                'deliveryTime' => [
-                    'earliest' => 5,
-                    'latest' => 7,
-                    'unit' => 'day'
-                ]
-            ];
+        try {
+            $apiKey = $this->systemConfig->get('SHQRateProvider.config.apiKey');
+            
+            if (!$apiKey) {
+                $this->logger->error('ShipperHQ API key not configured');
+                return null;
+            }
+
+            // Get shipping rates from ShipperHQ
+            $rates = $this->apiClient->getRates($context);
+
+            // Find matching rate for shipping method
+            foreach ($rates as $rate) {
+                if ($rate['methodCode'] === $shippingMethodId) {
+                    return (float) $rate['price'];
+                }
+            }
+
+            return null;
+
+        } catch (\Exception $e) {
+            $this->logger->error('Error calculating shipping rate: ' . $e->getMessage(), [
+                'exception' => $e,
+                'shippingMethodId' => $shippingMethodId
+            ]);
+            return null;
         }
-        
-        // Add express shipping for all orders
-        $rates[] = [
-            'name' => 'Express Shipping',
-            'price' => $cartTotal > 100 ? 19.99 : 24.99, // Discount for orders over $100
-            'deliveryTime' => [
-                'earliest' => 2,
-                'latest' => 3,
-                'unit' => 'day'
-            ]
-        ];
-        
-        // Premium shipping for high-value orders
-        if ($cartTotal > 200) {
-            $rates[] = [
-                'name' => 'Next Day Air',
-                'price' => 49.99,
-                'deliveryTime' => [
-                    'earliest' => 1,
-                    'latest' => 1,
-                    'unit' => 'day'
-                ]
-            ];
-        }
-        
-        return $rates;
     }
 } 

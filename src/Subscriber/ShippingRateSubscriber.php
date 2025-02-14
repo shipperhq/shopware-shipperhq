@@ -3,13 +3,13 @@
 namespace SHQ\RateProvider\Subscriber;
 
 use Psr\Log\LoggerInterface;
+use Shopware\Core\Checkout\Shipping\Cart\Error\ShippingMethodBlockedError;
+use Shopware\Core\Checkout\Shipping\ShippingMethodEntity;
+use Shopware\Core\System\SalesChannel\SalesChannelContext;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use SHQ\RateProvider\Service\ShippingRateCalculator;
 use Shopware\Core\Checkout\Cart\Event\CheckoutOrderPlacedEvent;
-use Shopware\Core\Checkout\Shipping\Cart\Error\ShippingMethodBlockedError;
-use Shopware\Core\Checkout\Cart\Event\ShippingMethodPriceCalculationEvent;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Shopware\Core\Framework\Struct\ArrayStruct;
-use SHQ\RateProvider\Helper\Debug;
+use Shopware\Core\Checkout\Shipping\Cart\Event\ShippingMethodPriceCalculationEvent;
 
 class ShippingRateSubscriber implements EventSubscriberInterface
 {
@@ -27,65 +27,45 @@ class ShippingRateSubscriber implements EventSubscriberInterface
     public static function getSubscribedEvents(): array
     {
         return [
-            'Shopware\Core\Checkout\Cart\Event\ShippingMethodPriceCalculationEvent' => 'onShippingMethodCalculation'
+            ShippingMethodPriceCalculationEvent::class => 'onShippingMethodPriceCalculation',
+            CheckoutOrderPlacedEvent::class => 'onOrderPlaced'
         ];
     }
 
-    public function onShippingMethodCalculation(ShippingMethodPriceCalculationEvent $event): void
+    public function onShippingMethodPriceCalculation(ShippingMethodPriceCalculationEvent $event): void
     {
-        $context = $event->getSalesChannelContext();
-        $cart = $context->getCart();
+        $shippingMethod = $event->getShippingMethod();
         
-        $this->logger->debug('ShippingRateSubscriber triggered', [
-            'cart_total' => $cart->getPrice()->getTotalPrice(),
-            'items_count' => $cart->getLineItems()->count(),
-            'event_class' => get_class($event)
-        ]);
-
-        try {
-            $rates = $this->calculator->calculate($context);
-            
-            Debug::dump($rates, 'Calculated Rates');
-            
-            foreach ($rates as $rate) {
-                $deliveryTime = new ArrayStruct([
-                    'min' => $rate['deliveryTime']['earliest'],
-                    'max' => $rate['deliveryTime']['latest'],
-                    'unit' => $rate['deliveryTime']['unit'],
-                    'name' => sprintf('%d-%d business days', 
-                        $rate['deliveryTime']['earliest'],
-                        $rate['deliveryTime']['latest']
-                    )
-                ]);
-
-                $this->logger->debug('Adding shipping method', [
-                    'name' => $rate['name'],
-                    'price' => $rate['price']
-                ]);
-
-                $event->addShippingMethod(
-                    $rate['name'],
-                    $rate['price'],
-                    $deliveryTime
-                );
-            }
-        } catch (\Exception $e) {
-            $this->logger->error('Failed to calculate shipping rates', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
+        // Only handle ShipperHQ methods
+        if (!$this->isShipperHQMethod($shippingMethod)) {
+            return;
         }
 
-        $this->logger->debug('Detailed debug info', [
-            'cart' => [
-                'total' => $cart->getPrice()->getTotalPrice(),
-                'items' => $cart->getLineItems()->count(),
-            ],
-            'context' => [
-                'salesChannelId' => $context->getSalesChannelId(),
-                'currencyId' => $context->getCurrencyId(),
-            ],
-            'trace' => (new \Exception())->getTraceAsString()
-        ]);
+        $context = [
+            'cart' => $event->getCart(),
+            'salesChannelContext' => $event->getSalesChannelContext()
+        ];
+
+        $price = $this->calculator->calculateRate(
+            $shippingMethod->getId(),
+            $context
+        );
+
+        if ($price === null) {
+            $event->addError(new ShippingMethodBlockedError($shippingMethod->getId()));
+            return;
+        }
+
+        $event->setCalculatedPrice($price);
     }
-}
+
+    public function onOrderPlaced(CheckoutOrderPlacedEvent $event): void
+    {
+        // Handle order placement notification to ShipperHQ if needed
+    }
+
+    private function isShipperHQMethod(ShippingMethodEntity $method): bool
+    {
+        return str_starts_with($method->getTechnicalName(), 'shipperhq_');
+    }
+} 
