@@ -12,9 +12,8 @@
     ],
     "require": {
         "shopware/core": "~6.6.0",
-        "shipperhq/library-ws": "^20.7.0",
-        "shipperhq/library-shipper": "^20.17",
-        "shipperhq/library-graphql": "^20.4.0"
+        "shipperhq/library-ws": "^20.7.2",
+        "shipperhq/library-shipper": "^20.18"
     },
     "extra": {
         "shopware-plugin-class": "SHQ\\RateProvider\\SHQRateProvider",

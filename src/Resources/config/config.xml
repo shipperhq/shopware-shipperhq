@@ -2,25 +2,85 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/shopware/platform/trunk/src/Core/System/SystemConfig/Schema/config.xsd">
     <card>
-        <title>API Settings</title>
+        <title lang="en-GB">Basic Settings</title>
+        <title lang="de-DE">Grundeinstellungen</title>
+
+        <input-field type="bool">
+            <name>enabled</name>
+            <label lang="en-GB">Enable ShipperHQ</label>
+            <defaultValue>true</defaultValue>
+        </input-field>
+
+        <input-field type="text">
+            <name>title</name>
+            <label lang="en-GB">Main Shipping Carrier Title</label>
+            <defaultValue>Shipping Rates</defaultValue>
+            <help-text lang="en-GB">Name of the main shipping carrier, also used for carrier title if no rates can be found. This is updated dynamically from ShipperHQ</help-text>
+        </input-field>
+    </card>
+
+    <card>
+        <title lang="en-GB">API Settings</title>
         <title lang="de-DE">API-Einstellungen</title>
         
         <input-field type="text">
             <name>apiKey</name>
-            <label>API Key</label>
-            <label lang="de-DE">API-Schlüssel</label>
-            <help-text>Enter your ShipperHQ API key here</help-text>
-            <help-text lang="de-DE">Geben Sie hier Ihren ShipperHQ API-Schlüssel ein</help-text>
+            <label lang="en-GB">API Key</label>
+            <help-text lang="en-GB">Obtain from under Websites in the ShipperHQ Dashboard</help-text>
+            <required>true</required>
+        </input-field>
+
+        <input-field type="password">
+            <name>authenticationCode</name>
+            <label lang="en-GB">Authentication Code</label>
+            <help-text lang="en-GB">Obtain from under Websites in the ShipperHQ Dashboard</help-text>
             <required>true</required>
         </input-field>
 
         <input-field type="text">
             <name>apiEndpoint</name>
-            <label>API Endpoint</label>
-            <label lang="de-DE">API-Endpunkt</label>
-            <defaultValue>https://api.shipperhq.com/v2/graphql</defaultValue>
-            <help-text>ShipperHQ API endpoint URL</help-text>
-            <help-text lang="de-DE">ShipperHQ API-Endpunkt URL</help-text>
+            <label lang="en-GB">API Endpoint</label>
+            <defaultValue>https://api.shipperhq.com/v1/</defaultValue>
+            <help-text lang="en-GB">ShipperHQ API endpoint URL</help-text>
+        </input-field>
+
+        <input-field type="int">
+            <name>wsTimeout</name>
+            <label lang="en-GB">Connection Timeout (seconds)</label>
+            <defaultValue>30</defaultValue>
+        </input-field>
+    </card>
+
+    <card>
+        <title lang="en-GB">Behavior Settings</title>
+        <title lang="de-DE">Verhaltenseinstellungen</title>
+
+        <input-field type="bool">
+            <name>hideNotify</name>
+            <label lang="en-GB">Hide Carrier Notifications</label>
+            <help-text lang="en-GB">Carriers may include notifications when their live rates have been modified</help-text>
+            <defaultValue>false</defaultValue>
+        </input-field>
+
+        <input-field type="bool">
+            <name>ignoreEmptyZip</name>
+            <label lang="en-GB">Require Meaningful Address To Request Rates</label>
+            <help-text lang="en-GB">Only request shipping rates from ShipperHQ if all of the required address fields in checkout are populated. This helps to lower the number of API requests</help-text>
+            <defaultValue>true</defaultValue>
+        </input-field>
+
+        <input-field type="bool">
+            <name>sandboxMode</name>
+            <label lang="en-GB">Developer Mode</label>
+            <help-text lang="en-GB">Please leave Unchecked, used for ShipperHQ Developer testing</help-text>
+            <defaultValue>false</defaultValue>
+        </input-field>
+
+        <input-field type="bool">
+            <name>debug</name>
+            <label lang="en-GB">Enable Debug Log</label>
+            <help-text lang="en-GB">Log ShipperHQ shipping rate requests and debug information</help-text>
+            <defaultValue>false</defaultValue>
         </input-field>
     </card>
 </config>
