@@ -28,11 +28,11 @@
             <tag name="shopware.cart.collector" priority="4500" />
         </service>
 
-         <service id="SHQ\RateProvider\Controller\Api\ShqApiRefreshMethodsController" public="true">
+         <!-- <service id="SHQ\RateProvider\Controller\Api\ShqApiRefreshMethodsController" public="true">
             <tag name="controller.service_arguments"/>
-        </service>
+        </service> -->
 
-        <service id="SHQ\RateProvider\Controller\Api\ApiTestController" public="true">
+        <service id="SHQ\RateProvider\Controller\Api\ApiConnectorController" public="true">
             <argument type="service" id="logger"/>
             <tag name="controller.service_arguments"/>
         </service>

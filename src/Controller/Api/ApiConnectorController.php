@@ -8,7 +8,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Psr\Log\LoggerInterface;
 
 #[Route(defaults: ['_routeScope' => ['api']])]
-class ApiTestController
+class ApiConnectorController
 {
     private LoggerInterface $logger;
 
@@ -24,6 +24,18 @@ class ApiTestController
         return new JsonResponse($this->checkCredentials($dataBag));
     }
 
+
+    /**
+     * Entry point for reloading the shipping methods from ShipperHQ
+     */
+    #[Route(path: '/api/_action/shq-api-test/refresh-methods', name: 'api.action.shq-api-test.refresh-methods', methods: ['POST'])]
+    public function refreshMethods(RequestDataBag $dataBag): JsonResponse
+    {   
+        $this->logger->info('refreshMethods', ['data' => $dataBag->all()]);
+        return new JsonResponse($this->reloadShippingMethods($dataBag));
+    }
+
+
     public function checkCredentials(RequestDataBag $dataBag): array
     {
         $apiKey = $dataBag->get('SHQRateProvider.config.apiKey');
@@ -36,5 +48,14 @@ class ApiTestController
 
 
         return $success;
+    }
+
+
+    /**
+     * Reloads the shipping methods from ShipperHQ
+     */
+    public function reloadShippingMethods(RequestDataBag $dataBag): array
+    {
+        return ['success' => true];
     }
 }

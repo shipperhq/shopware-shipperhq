@@ -46,6 +46,8 @@
         <component name="shq-api-test-button">
             <name>testConnection</name>
         </component>
+
+
     </card>
 
     <card>
@@ -79,5 +81,9 @@
             <help-text lang="en-GB">Log ShipperHQ shipping rate requests and debug information</help-text>
             <defaultValue>false</defaultValue>
         </input-field>
+
+        <component name="shq-api-refresh-methods-button">
+            <name>refreshMethods</name>
+        </component>
     </card>
 </config>

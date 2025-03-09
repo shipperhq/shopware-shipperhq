@@ -6,7 +6,7 @@ Shopware.Locale.extend('de-DE', deDE);
 Shopware.Locale.extend('en-GB', enGB);
 
 // Import services
-import ShipperHQApiService from './service/api-test.service';
+import ShipperHQApiService from './service/shq-api-connector.service';
 
 Shopware.Service().register('ShipperHQApiService', () => {
     return new ShipperHQApiService(
@@ -18,3 +18,4 @@ Shopware.Service().register('ShipperHQApiService', () => {
 
 // Import component
 import './component/shq-api-test-button';
+import './component/shq-api-refresh-methods-button';

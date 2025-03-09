@@ -1,9 +1,11 @@
 {
     "shqApiRefreshMethodsButton": {
-      "buttonLabel": "Check",
-      "title": "Refresh Methods",
-      "success": "Connection was successfully tested",
-      "error": "Could not connect. Please check your credentials"
+      "buttonLabel": "Reload Shipping Methods",
+      "success": "Success",
+      "successMessage": "Shipping Methods Successfully Reloaded",
+      "error": "Error",
+      "errorMessage": "Could not connect. Please check your credentials",
+      "missingCredentials": "Please enter API Key and Authentication Code first"
     },
     "shqApiTestButton": {
         "buttonLabel": "Test API Connection",

@@ -26,6 +26,25 @@ class ShipperHQApiService extends ApiService {
                 return ApiService.handleResponse(response);
             });
     }
+
+    refreshMethods(credentials) {
+        const headers = this.getBasicHeaders();
+
+        console.log("testConnection");
+        return this.httpClient
+            .post(
+                `_action/${this.getApiBasePath()}/refresh-methods`,
+                credentials,
+                {
+                    headers: headers
+                }
+            )
+            .then((response) => {
+                return ApiService.handleResponse(response);
+            });
+    }
+
+
 }
 
 export default ShipperHQApiService; 
