@@ -1,10 +1,8 @@
-<sw-button-process
-        :isLoading="isLoading"
-        :processSuccess="isSaveSuccessful"
-        @process-finish="saveFinish"
-        @click="check"
-        variant="primary"
-        size="small"
+<sw-button
+    :is-loading="isLoading"
+    variant="primary"
+    :square="false"
+    @click="check"
 >
     {{ $tc('shqApiTestButton.buttonLabel') }}
-</sw-button-process> 
+</sw-button> 

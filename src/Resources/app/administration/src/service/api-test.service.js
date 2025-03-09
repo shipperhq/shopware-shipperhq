@@ -14,7 +14,6 @@ class ShipperHQApiService extends ApiService {
         const headers = this.getBasicHeaders();
 
         console.log("testConnection");
-        console.log(credentials);
         return this.httpClient
             .post(
                 `_action/${this.getApiBasePath()}/test-connection`,

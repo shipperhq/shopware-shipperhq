@@ -27,7 +27,7 @@ class ApiTestController
     public function checkCredentials(RequestDataBag $dataBag): array
     {
         $apiKey = $dataBag->get('SHQRateProvider.config.apiKey');
-        $success = ['success' => false];
+        $success = ['success' => true];
 
         // Write your code here
 

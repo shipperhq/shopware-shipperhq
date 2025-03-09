@@ -1,10 +1,10 @@
-<div>
-    <sw-button-process
-            :is-loading="isLoading"
-            :process-success="isSaveSuccessful"
-            @process-finish="saveFinish"
-            @click="check"
-    >
-        {{ $tc('shqApiRefreshMethodsButton.buttonLabel') }}
-    </sw-button-process>
-</div>
+<sw-button-process
+        :is-loading="isLoading"
+        :process-success="isSaveSuccessful"
+        variant="primary"
+        :square="false"
+        @process-finish="saveFinish"
+        @click="check"
+>
+    {{ $tc('shqApiRefreshMethodsButton.buttonLabel') }}
+</sw-button-process>

@@ -14,8 +14,7 @@ Shopware.Component.register('shq-api-test-button', {
 
     data() {
         return {
-            isLoading: false,
-            isSaveSuccessful: false
+            isLoading: false
         };
     },
 
@@ -32,10 +31,6 @@ Shopware.Component.register('shq-api-test-button', {
     },
 
     methods: {
-        saveFinish() {
-            this.isSaveSuccessful = false;
-        },
-
         check() {
             if (!this.pluginConfig["SHQRateProvider.config.apiKey"] || !this.pluginConfig["SHQRateProvider.config.authenticationCode"]) {
                 this.createNotificationError({
@@ -45,14 +40,13 @@ Shopware.Component.register('shq-api-test-button', {
                 return;
             }
 
-            console.log(this.ShipperHQApiService);
             this.isLoading = true;
             this.ShipperHQApiService.testConnection({
                 apiKey: this.pluginConfig["SHQRateProvider.config.apiKey"],
                 authenticationCode: this.pluginConfig["SHQRateProvider.config.authenticationCode"]
             }).then((response) => {
+                console.log(response);
                 if (response.success) {
-                    this.isSaveSuccessful = true;
                     this.createNotificationSuccess({
                         title: this.$tc('shqApiTestButton.success'),
                         message: this.$tc('shqApiTestButton.successMessage')
@@ -73,4 +67,4 @@ Shopware.Component.register('shq-api-test-button', {
             });
         }
     }
-}); 
+});
