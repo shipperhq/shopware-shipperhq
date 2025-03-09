@@ -1,0 +1,8 @@
+{
+    "shqApiRefreshMethodsButton": {
+      "buttonLabel": "Check",
+      "title": "Refresh Methods",
+      "success": "Verbindung wurde erfolgreich getestet",
+      "error": "Verbindung konnte nicht hergestellt werden. Bitte prüfen Sie Ihre Zugangsdaten"
+    }
+  }

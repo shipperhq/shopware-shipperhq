@@ -16,5 +16,20 @@ class SHQRateProvider extends Plugin
     public function uninstall(UninstallContext $uninstallContext): void
     {
         parent::uninstall($uninstallContext);
+        if (!$uninstallContext->keepUserData()) {
+            $this->removeAllShipperHQTables();
+        }
+    }
+
+      /**
+     * @return void
+     * @throws Exception
+     */
+    private function removeAllShipperHQTables(): void
+    {
+        /** @var Connection $connection */
+        $connection = $this->container->get(Connection::class);
+        $databaseHandler = new DatabaseHandler($connection);
+        $databaseHandler->removeShipperHQTables();
     }
 }

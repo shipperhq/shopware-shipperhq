@@ -1,0 +1,17 @@
+{
+    "shqApiRefreshMethodsButton": {
+      "buttonLabel": "Check",
+      "title": "Refresh Methods",
+      "success": "Connection was successfully tested",
+      "error": "Could not connect. Please check your credentials"
+    },
+    "shqApiTestButton": {
+        "buttonLabel": "Test API Connection",
+        "success": "Success",
+        "successMessage": "Successfully connected to ShipperHQ API",
+        "error": "Error",
+        "errorMessage": "Could not connect to ShipperHQ API",
+        "missingCredentials": "Please enter API Key and Authentication Code first"
+    }
+  }
+  

@@ -37,18 +37,15 @@
             <required>true</required>
         </input-field>
 
-        <input-field type="text">
-            <name>apiEndpoint</name>
-            <label lang="en-GB">API Endpoint</label>
-            <defaultValue>https://api.shipperhq.com/v1/</defaultValue>
-            <help-text lang="en-GB">ShipperHQ API endpoint URL</help-text>
-        </input-field>
-
         <input-field type="int">
             <name>wsTimeout</name>
             <label lang="en-GB">Connection Timeout (seconds)</label>
             <defaultValue>30</defaultValue>
         </input-field>
+
+        <component name="shq-api-test-button">
+            <name>testConnection</name>
+        </component>
     </card>
 
     <card>
@@ -70,7 +67,7 @@
         </input-field>
 
         <input-field type="bool">
-            <name>sandboxMode</name>
+            <name>developerMode</name>
             <label lang="en-GB">Developer Mode</label>
             <help-text lang="en-GB">Please leave Unchecked, used for ShipperHQ Developer testing</help-text>
             <defaultValue>false</defaultValue>
