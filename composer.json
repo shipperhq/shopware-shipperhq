@@ -11,7 +11,7 @@
         }
     ],
     "require": {
-        "shopware/core": "~6.6.0",
+        "shopware/core": "^6.6.0",
         "shipperhq/library-ws": "^20.7.2",
         "shipperhq/library-shipper": "^20.18"
     },
@@ -39,7 +39,11 @@
     "autoload": {
         "psr-4": {
             "SHQ\\RateProvider\\": "src/"
-        }
+        },
+        "exclude-from-classmap": [
+            "/vendor/shipperhq/library-shipper/src/registration.php",
+            "/vendor/shipperhq/library-ws/src/registration.php"
+        ]
     },
     "config": {
         "allow-plugins": {

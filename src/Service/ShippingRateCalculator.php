@@ -1,5 +1,15 @@
 <?php declare(strict_types=1);
 
+/**
+ * Shipper HQ
+ *
+ * @category ShipperHQ
+ * @package shopware-shipperhq
+ * @copyright Copyright (c) 2025 Zowta LTD and Zowta LLC (http://www.ShipperHQ.com)
+ * @license ShipperHQ 2025
+ * @author ShipperHQ Team sales@shipperhq.com
+ */
+
 namespace SHQ\RateProvider\Service;
 
 use Psr\Log\LoggerInterface;

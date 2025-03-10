@@ -6,21 +6,26 @@ use Shopware\Core\Framework\Validation\DataBag\RequestDataBag;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
 use Psr\Log\LoggerInterface;
+use SHQ\RateProvider\Handlers\ShipperHQHandler;
 
 #[Route(defaults: ['_routeScope' => ['api']])]
 class ApiConnectorController
 {
     private LoggerInterface $logger;
+    private ShipperHQHandler $shipperHQHandler;
 
-    public function __construct(LoggerInterface $logger)
-    {
+    public function __construct(
+        LoggerInterface $logger,
+        ShipperHQHandler $shipperHQHandler
+    ) {
         $this->logger = $logger;
+        $this->shipperHQHandler = $shipperHQHandler;
     }
 
     #[Route(path: '/api/_action/shq-api-test/test-connection', name: 'api.action.shq-api-test.test-connection', methods: ['POST'])]
     public function testConnection(RequestDataBag $dataBag): JsonResponse
     {   
-        $this->logger->info('testConnection', ['data' => $dataBag->all()]);
+        $this->logger->info('SHIPPERHQ: testConnection in controller', ['data' => $dataBag->all()]);
         return new JsonResponse($this->checkCredentials($dataBag));
     }
 
@@ -31,7 +36,7 @@ class ApiConnectorController
     #[Route(path: '/api/_action/shq-api-test/refresh-methods', name: 'api.action.shq-api-test.refresh-methods', methods: ['POST'])]
     public function refreshMethods(RequestDataBag $dataBag): JsonResponse
     {   
-        $this->logger->info('refreshMethods', ['data' => $dataBag->all()]);
+        $this->logger->info('SHIPPERHQ: refreshMethods in controller', ['data' => $dataBag->all()]);
         return new JsonResponse($this->reloadShippingMethods($dataBag));
     }
 
@@ -56,6 +61,14 @@ class ApiConnectorController
      */
     public function reloadShippingMethods(RequestDataBag $dataBag): array
     {
-        return ['success' => true];
+       
+        $success = ['success' => false];
+
+        if ($this->shipperHQHandler->reloadShippingMethods($dataBag)) {
+            $success['success'] = true;
+        }
+
+        return $success;
+
     }
 }

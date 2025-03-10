@@ -13,7 +13,7 @@ class ShipperHQApiService extends ApiService {
     testConnection(credentials) {
         const headers = this.getBasicHeaders();
 
-        console.log("testConnection");
+        console.log("testConnection inside service");
         return this.httpClient
             .post(
                 `_action/${this.getApiBasePath()}/test-connection`,
@@ -30,7 +30,7 @@ class ShipperHQApiService extends ApiService {
     refreshMethods(credentials) {
         const headers = this.getBasicHeaders();
 
-        console.log("testConnection");
+        console.log("refreshMethods");
         return this.httpClient
             .post(
                 `_action/${this.getApiBasePath()}/refresh-methods`,

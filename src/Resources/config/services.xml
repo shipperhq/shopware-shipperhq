@@ -4,6 +4,10 @@
            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
 
     <services>
+        <service id="ShipperHQ\WS\Client\WebServiceClient" class="ShipperHQ\WS\Client\WebServiceClient" public="false">
+            <tag name="shopware.service"/>
+        </service>
+
         <service id="SHQ\RateProvider\Service\ShippingRateCalculator" public="true">
             <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
             <argument type="service" id="logger"/>
@@ -15,9 +19,15 @@
             <argument type="service" id="logger"/>
         </service>
 
+        <service id="SHQ\RateProvider\Helper\RestHelper">
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+        </service>
+
         <service id="SHQ\RateProvider\Service\ShipperHQApiClient">
             <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
             <argument type="service" id="logger"/>
+            <argument type="service" id="SHQ\RateProvider\Helper\RestHelper"/>
+            <argument type="service" id="ShipperHQ\WS\Client\WebServiceClient"/>
         </service>
 
         <service id="SHQ\RateProvider\Checkout\Cart\OverwritePriceCollector"> 
@@ -28,12 +38,15 @@
             <tag name="shopware.cart.collector" priority="4500" />
         </service>
 
-         <!-- <service id="SHQ\RateProvider\Controller\Api\ShqApiRefreshMethodsController" public="true">
-            <tag name="controller.service_arguments"/>
-        </service> -->
+        <service id="SHQ\RateProvider\Handlers\ShipperHQHandler">
+            <argument type="service" id="logger"/>
+            <argument type="service" id="SHQ\RateProvider\Service\ShipperHQApiClient"/>
+            <argument type="service" id="shipping_method.repository"/>
+        </service>
 
         <service id="SHQ\RateProvider\Controller\Api\ApiConnectorController" public="true">
             <argument type="service" id="logger"/>
+            <argument type="service" id="SHQ\RateProvider\Handlers\ShipperHQHandler"/>
             <tag name="controller.service_arguments"/>
         </service>
     </services>
