@@ -21,6 +21,17 @@ use SHQ\RateProvider\Handlers\DatabaseHandler;
 
 class SHQRateProvider extends Plugin
 {
+    public function boot(): void
+    {
+        parent::boot();
+        
+        // Register vendor autoloader
+        $vendorDir = $this->getPath() . '/vendor';
+        if (file_exists($vendorDir . '/autoload.php')) {
+            require_once $vendorDir . '/autoload.php';
+        }
+    }
+
     public function install(InstallContext $installContext): void
     {
         parent::install($installContext);

@@ -4,7 +4,7 @@
            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
 
     <services>
-        <service id="ShipperHQ\WS\Client\WebServiceClient" class="ShipperHQ\WS\Client\WebServiceClient" public="false">
+        <service id="ShipperHQ\WS\Client\WebServiceClient" class="ShipperHQ\WS\Client\WebServiceClient" public="true">
             <tag name="shopware.service"/>
         </service>
 

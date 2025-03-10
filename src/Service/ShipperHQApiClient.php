@@ -17,9 +17,10 @@ use Shopware\Core\System\SystemConfig\SystemConfigService;
 use SHQ\RateProvider\Helper\RestHelper;
 use ShipperHQ\WS\Client\WebServiceClient;
 use ShipperHQ\WS\Rate\Request\RateRequest;
+use ShipperHQ\WS\AllowedMethods\AllowedMethodsRequest;
 use ShipperHQ\WS\Shared\Credentials;
 use ShipperHQ\WS\Shared\SiteDetails;
-
+use ShipperHQ\WS\Shared\WebServiceRequestInterface;
 /**
  * This class is used to interact with the ShipperHQ API
  * 
@@ -50,6 +51,7 @@ class ShipperHQApiClient
 
     public function getRates(array $context): array
     {
+        $this->logger->info('SHIPPERHQ: Inside ApiClient getRates');
         $request = $this->buildRatesRequest($context);
         $result = $this->sendRequest($request);
         
@@ -64,22 +66,12 @@ class ShipperHQApiClient
     {
         $this->logger->info('SHIPPERHQ: Inside ApiClient getAllowedMethods');
         
-        // Create credentials
-        $credentials = new Credentials();
-        $credentials->apiKey = $this->systemConfig->get('SHQRateProvider.config.apiKey');
-        
-        // Create site details
-        $siteDetails = new SiteDetails();
-        $siteDetails->ecommerceCart = 'Shopware';
-        $siteDetails->ecommerceVersion = '6.6.0';
-        
         // Create rate request
-        $request = new RateRequest();
-        $request->setCredentials($credentials);
-        $request->setSiteDetails($siteDetails);
+        $request = new AllowedMethodsRequest();
+        $request->setCredentials($this->buildCredentials());
+        $request->setSiteDetails($this->buildSiteDetails());
         
         $result = $this->sendRequest($request, $this->restHelper->getAllowedMethodGatewayUrl());
-
 
         $resultData = [];
         if (is_object($result['debug'])) {
@@ -113,19 +105,10 @@ class ShipperHQApiClient
 
     private function buildRatesRequest(array $context): RateRequest
     {
-        // Create credentials
-        $credentials = new Credentials();
-        $credentials->apiKey = $this->systemConfig->get('SHQRateProvider.config.apiKey');
-        
-        // Create site details
-        $siteDetails = new SiteDetails();
-        $siteDetails->ecommerceCart = 'Shopware';
-        $siteDetails->ecommerceVersion = '6.6.0';
-        
         // Create rate request
         $request = new RateRequest();
-        $request->setCredentials($credentials);
-        $request->setSiteDetails($siteDetails);
+        $request->setCredentials($this->buildCredentials());
+        $request->setSiteDetails($this->buildSiteDetails());
         
         // Add cart and other context data
         // TODO: Add proper cart and context data mapping
@@ -133,14 +116,32 @@ class ShipperHQApiClient
         return $request;
     }
 
+    private function buildCredentials(): Credentials
+    {
+        $credentials = new Credentials();
+        $credentials->apiKey = $this->systemConfig->get('SHQRateProvider.config.apiKey');
+        $credentials->password = $this->systemConfig->get('SHQRateProvider.config.authenticationCode');
+
+        $this->logger->info('SHIPPERHQ: Credentials', ['credentials' => $credentials]);
+        return $credentials;
+    }
+
+    private function buildSiteDetails(): SiteDetails
+    {
+        $siteDetails = new SiteDetails();
+        $siteDetails->ecommerceCart = 'Shopware';
+        $siteDetails->ecommerceVersion = '6.6.0';
+        return $siteDetails;
+    }
+
     /**
      * Sends the JSON request to ShipperHQ
      *
-     * @param RateRequest $request
+     * @param WebServiceRequestInterface $request
      * @param string|null $url
      * @return array|null
      */
-    private function sendRequest(RateRequest $request, ?string $url = null): ?array
+    private function sendRequest($request, ?string $url = null): ?array
     {
         $timeout = 30;
         $initVal = microtime(true);
@@ -154,12 +155,10 @@ class ShipperHQApiClient
         $elapsed = microtime(true) - $initVal;
         $this->logger->debug('ShipperHQ API request time: ' . $elapsed);
 
-     
-
         $this->logger->debug('ShipperHQ request and result', [
             'request' => $request,
             'result' => $result['result'],
-            'debug' => $result['debug']  ?? []
+            'debug' => $result['debug']['json_request']  ?? []
         ]);
 
         // Convert stdClass to array if needed
