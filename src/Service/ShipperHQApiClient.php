@@ -32,17 +32,20 @@ class ShipperHQApiClient
     private LoggerInterface $logger;
     private RestHelper $restHelper;
     private WebServiceClient $client;
+    private \ShipperHQ\Lib\Rate\Helper $shipperHQHelper;
 
     public function __construct(
         SystemConfigService $systemConfig,
         LoggerInterface $logger,
         RestHelper $restHelper,
-        WebServiceClient $client
+        WebServiceClient $client,
+        \ShipperHQ\Lib\Rate\Helper $shipperHQHelper
     ) {
         $this->systemConfig = $systemConfig;
         $this->logger = $logger;
         $this->restHelper = $restHelper;
         $this->client = $client;
+        $this->shipperHQHelper = $shipperHQHelper;
     }
 
     public function getRates(array $context): array
@@ -76,12 +79,36 @@ class ShipperHQApiClient
         $request->setSiteDetails($siteDetails);
         
         $result = $this->sendRequest($request, $this->restHelper->getAllowedMethodGatewayUrl());
-        
-        if (!$result) {
-            return [];
+
+
+        $resultData = [];
+        if (is_object($result['debug'])) {
+            $resultData = json_decode(json_encode($resultData), true);
+            $this->logger->error($resultData);
         }
         
-        return $result;
+        $this->logger->info('SHIPPERHQ: Output from getAllowedMethods call', ['result' => $resultData]);
+
+        if (!isset($result['result'])) {
+
+            $this->logger->error('ShipperHQ API Error: No result returned');
+            return null; // TODO Tidy this up
+        }
+
+        $allowedShippingMethods = [];
+
+        $shipper_response = $this->shipperHQHelper->object_to_array($result);
+
+        $this->logger->info('SHIPPERHQ: Inside ApiClient getAllowedMethods', ['shipper_response' => $shipper_response]);
+
+        // if (isset($shipper_response['carrierGroups'])) {
+        //     $transactionId = $this->shipperHQHelper->extractTransactionId($shipper_response);
+        //     $allowedShippingMethods = $this->processRatesResponse($shipper_response, $transactionId);
+        // } else {
+        //     $allowedShippingMethods= [];
+        // }
+
+        return $allowedShippingMethods;
     }
 
     private function buildRatesRequest(array $context): RateRequest
@@ -127,16 +154,20 @@ class ShipperHQApiClient
         $elapsed = microtime(true) - $initVal;
         $this->logger->debug('ShipperHQ API request time: ' . $elapsed);
 
-        if (!isset($result['result'])) {
-            $this->logger->error('ShipperHQ API Error: No result returned');
-            return null;
-        }
+     
 
         $this->logger->debug('ShipperHQ request and result', [
             'request' => $request,
-            'result' => $result['debug'] ?? []
+            'result' => $result['result'],
+            'debug' => $result['debug']  ?? []
         ]);
 
-        return $result['result'];
+        // Convert stdClass to array if needed
+        // $resultData = $result['result'];
+        // if (is_object($resultData)) {
+        //     $resultData = json_decode(json_encode($resultData), true);
+        // }
+
+        return $result;
     }
 } 
