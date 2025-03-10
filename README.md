@@ -35,6 +35,12 @@ This plugin provides rate calculation functionality for shipping rates in Shopwa
 
 ## Development
 
+### Database Connection
+
+```bash
+mysql -u root -proot -h shopware-mysql.jo-macbook.svc.cluster.local
+```
+
 ### Building the Administration
 
 ```bash
@@ -44,7 +50,7 @@ npm install
 # Build for production
 npm run build
 
-# Watch for changes during development
+# Watch for changes during development and reload the admin
 ./bin/watch-administration.sh
 ```
 
@@ -60,9 +66,6 @@ bin/console plugin:refresh
 # Update the plugin
 bin/console plugin:update SHQRateProvider
 ```
-
-
-
 
 ## Support
 

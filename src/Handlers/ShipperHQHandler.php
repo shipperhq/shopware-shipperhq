@@ -51,7 +51,7 @@ class ShipperHQHandler
             $shqMethods = $this->apiClient->getAllowedMethods();
 
             if (empty($shqMethods)) {
-                throw new \Exception('No shipping methods returned from ShipperHQ');
+                throw new \Exception('SHIPPERHQ: No shipping methods returned from allowed methods call');
             }
 
             // 2. Get existing methods from Shopware

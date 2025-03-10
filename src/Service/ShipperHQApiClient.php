@@ -63,9 +63,7 @@ class ShipperHQApiClient
     }
 
     public function getAllowedMethods(): array
-    {
-        $this->logger->info('SHIPPERHQ: Inside ApiClient getAllowedMethods');
-        
+    {        
         // Create rate request
         $request = new AllowedMethodsRequest();
         $request->setCredentials($this->buildCredentials());
@@ -75,30 +73,63 @@ class ShipperHQApiClient
 
         $resultData = [];
         if (is_object($result['debug'])) {
-            $resultData = json_decode(json_encode($resultData), true);
+            $resultData = json_decode(json_encode($result), true);
             $this->logger->error($resultData);
         }
         
-        $this->logger->info('SHIPPERHQ: Output from getAllowedMethods call', ['result' => $resultData]);
 
         if (!isset($result['result'])) {
 
             $this->logger->error('ShipperHQ API Error: No result returned');
             return null; // TODO Tidy this up
+        } else {
+            $this->logger->info('SHIPPERHQ: Response from getAllowedMethods call', ['result' => $result['result']]);
+
         }
 
         $allowedShippingMethods = [];
 
         $shipper_response = $this->shipperHQHelper->object_to_array($result);
 
-        $this->logger->info('SHIPPERHQ: Inside ApiClient getAllowedMethods', ['shipper_response' => $shipper_response]);
+        $this->logger->info('SHIPPERHQ: Formatted Response', ['shipper_response' => $shipper_response]);
 
-        // if (isset($shipper_response['carrierGroups'])) {
-        //     $transactionId = $this->shipperHQHelper->extractTransactionId($shipper_response);
-        //     $allowedShippingMethods = $this->processRatesResponse($shipper_response, $transactionId);
-        // } else {
-        //     $allowedShippingMethods= [];
-        // }
+
+        // Check if we have carrier methods in the response
+        if (isset($shipper_response['result']) && 
+            isset($shipper_response['result']['carrierMethods']) && 
+            is_array($shipper_response['result']['carrierMethods'])) {
+
+            //$this->logger->info('SHIPPERHQ: Carrier methods', ['carrierMethods' => $shipper_response['result']['carrierMethods']]);
+            // Loop through each carrier
+            foreach ($shipper_response['result']['carrierMethods'] as $carrier) {
+                $carrierCode = $carrier['carrierCode'];
+                $carrierTitle = $carrier['title'];
+                
+                // Loop through each method for this carrier
+                if (isset($carrier['methods']) && is_array($carrier['methods'])) {
+                    foreach ($carrier['methods'] as $method) {
+                        // Skip if methodCode is not set
+                        if (!isset($method['methodCode'])) {
+                            continue;
+                        }
+                        
+                        // Create the code as carrierCode-methodCode
+                        $code = 'shq-'. $carrierCode . '-' . $method['methodCode'];
+                        
+                        // Create the name as title-method name
+                        $name = $carrierTitle . '-' . $method['name'];
+                        
+                        // Add to our allowed methods array
+                        $allowedShippingMethods[] = [
+                            'code' => $code,
+                            'name' => $name
+                        ];
+                    }
+                }
+            }
+        }
+
+        $this->logger->debug('SHIPPERHQ: Allowed shipping methods', ['allowedShippingMethods' => $allowedShippingMethods]);
 
         return $allowedShippingMethods;
     }
@@ -122,7 +153,6 @@ class ShipperHQApiClient
         $credentials->apiKey = $this->systemConfig->get('SHQRateProvider.config.apiKey');
         $credentials->password = $this->systemConfig->get('SHQRateProvider.config.authenticationCode');
 
-        $this->logger->info('SHIPPERHQ: Credentials', ['credentials' => $credentials]);
         return $credentials;
     }
 
@@ -131,6 +161,7 @@ class ShipperHQApiClient
         $siteDetails = new SiteDetails();
         $siteDetails->ecommerceCart = 'Shopware';
         $siteDetails->ecommerceVersion = '6.6.0';
+        $siteDetails->environmentScope = "LIVE";  // Only supporting LIVE for now
         return $siteDetails;
     }
 
