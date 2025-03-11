@@ -113,16 +113,12 @@ class ShipperHQApiClient
                             continue;
                         }
                         
-                        // Create the code as carrierCode-methodCode
-                        $code = 'shq-'. $carrierCode . '-' . $method['methodCode'];
-                        
-                        // Create the name as title-method name
-                        $name = $carrierTitle . '-' . $method['name'];
-                        
                         // Add to our allowed methods array
                         $allowedShippingMethods[] = [
-                            'code' => $code,
-                            'name' => $name
+                            'carrierCode' => $carrierCode,
+                            'carrierTitle' => $carrierTitle,
+                            'methodCode' => $method['methodCode'],
+                            'methodName' => $method['name']
                         ];
                     }
                 }
