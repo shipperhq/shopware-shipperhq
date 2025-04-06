@@ -13,7 +13,10 @@
     "repositories": [
         {
             "type": "vcs",
-            "url": "git@gitlab.com:ShipperHQ/Platform/shared/library-ws.git"
+            "url": "git@gitlab.com:ShipperHQ/Platform/shared/library-ws.git",
+            "options": {
+                "symlink": false
+            }
         },
         {
             "type": "vcs",

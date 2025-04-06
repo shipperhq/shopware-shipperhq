@@ -34,32 +34,22 @@ class ShipperHQApiClient
     private RestHelper $restHelper;
     private WebServiceClient $client;
     private \ShipperHQ\Lib\Rate\Helper $shipperHQHelper;
+    private \SHQ\RateProvider\Helper\Mapper $mapper;
 
     public function __construct(
         SystemConfigService $systemConfig,
         LoggerInterface $logger,
         RestHelper $restHelper,
         WebServiceClient $client,
-        \ShipperHQ\Lib\Rate\Helper $shipperHQHelper
+        \ShipperHQ\Lib\Rate\Helper $shipperHQHelper,
+        \SHQ\RateProvider\Helper\Mapper $mapper
     ) {
         $this->systemConfig = $systemConfig;
         $this->logger = $logger;
         $this->restHelper = $restHelper;
         $this->client = $client;
         $this->shipperHQHelper = $shipperHQHelper;
-    }
-
-    public function getRates(array $context): array
-    {
-        $this->logger->info('SHIPPERHQ: Inside ApiClient getRates');
-        $request = $this->buildRatesRequest($context);
-        $result = $this->sendRequest($request);
-        
-        if (!$result) {
-            return [];
-        }
-        
-        return $result;
+        $this->mapper = $mapper;
     }
 
     public function getAllowedMethods(): array
@@ -130,18 +120,7 @@ class ShipperHQApiClient
         return $allowedShippingMethods;
     }
 
-    private function buildRatesRequest(array $context): RateRequest
-    {
-        // Create rate request
-        $request = new RateRequest();
-        $request->setCredentials($this->buildCredentials());
-        $request->setSiteDetails($this->buildSiteDetails());
-        
-        // Add cart and other context data
-        // TODO: Add proper cart and context data mapping
-        
-        return $request;
-    }
+
 
     private function buildCredentials(): Credentials
     {
@@ -161,7 +140,77 @@ class ShipperHQApiClient
         return $siteDetails;
     }
 
+   
+
+
     /**
+     * TODO Is this required?
+     */
+    public function getRates(array $context): array
+    {
+        $this->logger->info('SHIPPERHQ: Inside ApiClient getRates');
+        // $request = $this->buildRatesRequest($context);
+        // $result = $this->sendRequest($request);
+        
+      //  if (!$result) {
+            return [];
+      //  }
+        
+       // return $result;
+    }
+
+
+
+    /**
+     * Entry point for getting rates for all methods in a single API call
+     * 3/11/2025
+     */
+    public function getRatesForAllMethods(RateRequest $request): ?array
+    {
+        try {
+            // Add credentials and site details if not already set
+            if (!$request->getCredentials()) {
+                $request->setCredentials($this->buildCredentials());
+            }
+            
+            if (!$request->getSiteDetails()) {
+                $request->setSiteDetails($this->buildSiteDetails());
+            }
+
+            // Send the request to ShipperHQ
+            $result = $this->sendRequest($request, $this->restHelper->getRateGatewayUrl());
+            
+            // Log the full response for debugging
+            $this->logger->debug('SHIPPERHQ: Full API response', [
+                'response' => $result
+            ]);
+
+            if (!isset($result['result'])) {
+                $this->logger->error('ShipperHQ API Error: No result returned');
+                return null;
+            }
+
+            // Map the response using the Mapper
+            $mappedResponse = $this->mapper->mapResponse($result['result']);
+            
+            // $this->logger->debug('SHIPPERHQ: Mapped response', [
+            //     'mapped_response' => $mappedResponse
+            // ]);
+
+            return $mappedResponse;
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Error calling ShipperHQ API: ' . $e->getMessage(), [
+                'exception' => $e
+            ]);
+            return null;
+        } 
+    }
+
+
+
+
+     /**
      * Sends the JSON request to ShipperHQ
      *
      * @param WebServiceRequestInterface $request
@@ -182,18 +231,23 @@ class ShipperHQApiClient
         $elapsed = microtime(true) - $initVal;
         $this->logger->debug('ShipperHQ API request time: ' . $elapsed);
 
+        // Convert stdClass to array
+        if (is_object($result)) {
+            $result = json_decode(json_encode($result), true);
+        }
+
         $this->logger->debug('ShipperHQ request and result', [
             'request' => $request,
-            'result' => $result['result'],
-            'debug' => $result['debug']['json_request']  ?? []
+            'result' => $result['result'] ?? null,
+            'debug' => $result['debug']['json_request'] ?? []
         ]);
-
-        // Convert stdClass to array if needed
-        // $resultData = $result['result'];
-        // if (is_object($resultData)) {
-        //     $resultData = json_decode(json_encode($resultData), true);
-        // }
 
         return $result;
     }
+
+
+  
+
+   
+    
 } 

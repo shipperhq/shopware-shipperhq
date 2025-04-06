@@ -22,11 +22,14 @@
             <argument type="service" id="logger"/>
         </service>
 
+        <!-- Commenting out ShippingRateSubscriber as it appears to be redundant with BatchShippingRateSubscriber -->
+        <!--
         <service id="SHQ\RateProvider\Subscriber\ShippingRateSubscriber">
             <tag name="kernel.event_subscriber"/>
             <argument type="service" id="SHQ\RateProvider\Service\ShippingRateCalculator"/>
             <argument type="service" id="logger"/>
         </service>
+        -->
 
         <service id="SHQ\RateProvider\Helper\RestHelper">
             <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
@@ -38,15 +41,17 @@
             <argument type="service" id="SHQ\RateProvider\Helper\RestHelper"/>
             <argument type="service" id="ShipperHQ\WS\Client\WebServiceClient"/>
             <argument type="service" id="ShipperHQ\Lib\Rate\Helper"/>
+            <argument type="service" id="SHQ\RateProvider\Helper\Mapper"/>
         </service>
 
+        <!-- Commenting out OverwritePriceCollector as it appears to be unnecessary -->
+        <!--
         <service id="SHQ\RateProvider\Checkout\Cart\OverwritePriceCollector"> 
             <argument type="service" id="Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator"/>
-
-            <!-- after product collector/processor -->
             <tag name="shopware.cart.processor" priority="4500" />
             <tag name="shopware.cart.collector" priority="4500" />
         </service>
+        -->
 
         <service id="SHQ\RateProvider\Handlers\ShipperHQHandler">
             <argument type="service" id="logger"/>
@@ -59,6 +64,57 @@
             <argument type="service" id="logger"/>
             <argument type="service" id="SHQ\RateProvider\Handlers\ShipperHQHandler"/>
             <tag name="controller.service_arguments"/>
+        </service>
+
+        <service id="SHQ\RateProvider\Service\ShipperHQBatchRateProvider">
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+            <argument type="service" id="logger"/>
+            <argument type="service" id="SHQ\RateProvider\Service\ShipperHQApiClient"/>
+            <argument type="service" id="shipping_method.repository"/>
+            <argument type="service" id="SHQ\RateProvider\Helper\Mapper"/>
+        </service>
+
+        <service id="SHQ\RateProvider\Service\ShippingRateCache">
+            <argument type="service" id="session.factory"/>
+            <argument type="service" id="logger"/>
+            <argument type="service" id="SHQ\RateProvider\Service\ShipperHQBatchRateProvider"/>
+        </service>
+
+        <!-- Commented out as we're using DeliveryCalculatorDecorator instead -->
+        <!--
+        <service id="SHQ\RateProvider\Subscriber\BatchShippingRateSubscriber">
+            <argument type="service" id="SHQ\RateProvider\Service\ShippingRateCache"/>
+            <argument type="service" id="monolog.logger.shipperhq"/>
+            <argument type="service" id="shipping_method.repository"/>
+            <argument type="service" id="Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator"/>
+            <argument type="service" id="Shopware\Core\Checkout\Cart\Tax\PercentageTaxRuleBuilder"/>
+            <tag name="kernel.event_subscriber"/>
+        </service>
+        -->
+
+        <service id="SHQ\RateProvider\Subscriber\CartEventSubscriber">
+            <argument type="service" id="SHQ\RateProvider\Service\ShippingRateCache"/>
+            <tag name="kernel.event_subscriber"/>
+        </service>
+
+        <service id="SHQ\RateProvider\Helper\Mapper">
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+            <argument type="service" id="logger"/>
+            <argument type="service" id="product.repository"/>
+        </service>
+
+        <service id="SHQ\RateProvider\Subscriber\ShippingMethodLoggerSubscriber">
+            <argument type="service" id="logger"/>
+            <tag name="kernel.event_subscriber"/>
+        </service>
+
+        <service id="SHQ\RateProvider\Core\Checkout\Cart\Delivery\DeliveryCalculatorDecorator" decorates="Shopware\Core\Checkout\Cart\Delivery\DeliveryCalculator" public="true">
+            <argument type="service" id=".inner"/>
+            <argument type="service" id="Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator"/>
+            <argument type="service" id="Shopware\Core\Checkout\Cart\Tax\PercentageTaxRuleBuilder"/>
+            <argument type="service" id="logger"/>
+            <argument type="service" id="SHQ\RateProvider\Service\ShippingRateCache"/>
+            <tag name="shopware.service"/>
         </service>
     </services>
 </container>

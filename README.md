@@ -43,6 +43,14 @@ mysql -u root -proot -h shopware-mysql.jo-macbook.svc.cluster.local
 
 ### Building the Administration
 
+We want to build the administration after changes 
+
+```bash
+bin/build-administration.sh 
+ bin/console cache:clear && bin/console assets:install && bin/console theme:compile
+```
+
+
 ```bash
 # Install dependencies
 npm install
@@ -66,6 +74,10 @@ bin/console plugin:refresh
 # Update the plugin
 bin/console plugin:update SHQRateProvider
 ```
+
+### Running Shopware
+
+
 
 ## Support
 
