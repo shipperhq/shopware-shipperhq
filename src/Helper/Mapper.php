@@ -408,46 +408,34 @@ class Mapper
         return "checkout";
     }
 
-    public function mapResponse($result): array
+    /**
+     * Maps the API response to a RateResponse object
+     * 
+     * @param object $result The API response
+     * @return \ShipperHQ\WS\Rate\Response\RateResponse
+     */
+    public function mapResponse($result): \ShipperHQ\WS\Rate\Response\RateResponse
     {
-        // Log the initial result
-        // $this->logger->debug('SHIPPERHQ: Initial response structure', [
-        //     'result' => $result,
-        //     'type' => gettype($result)
-        // ]);
-
-        // Convert stdClass to array if needed
-        if (is_object($result)) {
-            $result = json_decode(json_encode($result), true);
-            // $this->logger->debug('SHIPPERHQ: Converted object to array', [
-            //     'result' => $result
-            // ]);
-        }
+        // Convert stdClass to array if needed for backward compatibility
+        $resultArray = is_object($result) ? json_decode(json_encode($result), true) : $result;
+        
+        $this->logger->debug('SHIPPERHQ: Mapping response', [
+            'result_type' => gettype($result),
+            'result_array' => $resultArray
+        ]);
 
         // Handle the nested response structure
-        if (isset($result['response']['result']['stdClass'])) {
-         //   $this->logger->debug('SHIPPERHQ: Found response.result.stdClass path');
-            $result = $result['response']['result']['stdClass'];
-        } elseif (isset($result['result']['stdClass'])) {
-          //  $this->logger->debug('SHIPPERHQ: Found result.stdClass path');
-            $result = $result['result']['stdClass'];
-        } elseif (isset($result['stdClass'])) {
-         //   $this->logger->debug('SHIPPERHQ: Found stdClass path');
-            $result = $result['stdClass'];
+        if (isset($resultArray['stdClass'])) {
+            $resultArray = $resultArray['stdClass'];
+            $this->logger->debug('SHIPPERHQ: Found stdClass wrapper, unwrapping', [
+                'unwrapped' => $resultArray
+            ]);
         }
-
-        // $this->logger->debug('SHIPPERHQ: Final result structure before mapping', [
-        //     'result' => $result,
-        //     'keys' => array_keys($result)
-        // ]);
 
         $rateResponse = new \ShipperHQ\WS\Rate\Response\RateResponse();
 
         // Map errors if present
-        if (isset($result['errors']) && !empty($result['errors'])) {
-            // $this->logger->debug('SHIPPERHQ: Processing errors', [
-            //     'errors' => $result['errors']
-            // ]);
+        if (isset($resultArray['errors']) && !empty($resultArray['errors'])) {
             $errors = array_map(function ($error) {
                 // Convert error object to array if needed
                 if (is_object($error)) {
@@ -462,18 +450,15 @@ class Mapper
                     $webServiceError->setPriority($error['priority']);
                 }
                 return $webServiceError;
-            }, $result['errors']);
+            }, $resultArray['errors']);
             $rateResponse->setErrors($errors);
         }
 
         // Map response summary
-        if (isset($result['responseSummary'])) {
-            // $this->logger->debug('SHIPPERHQ: Processing response summary', [
-            //     'summary' => $result['responseSummary']
-            // ]);
-            $summaryData = is_object($result['responseSummary']) 
-                ? json_decode(json_encode($result['responseSummary']), true) 
-                : $result['responseSummary'];
+        if (isset($resultArray['responseSummary'])) {
+            $summaryData = is_object($resultArray['responseSummary']) 
+                ? json_decode(json_encode($resultArray['responseSummary']), true) 
+                : $resultArray['responseSummary'];
             
             $summary = new \ShipperHQ\WS\Rate\Response\ResponseSummary(
                 $summaryData['date'] ?? 0,
@@ -489,13 +474,10 @@ class Mapper
         }
 
         // Map global settings
-        if (isset($result['globalSettings'])) {
-            // $this->logger->debug('SHIPPERHQ: Processing global settings', [
-            //     'settings' => $result['globalSettings']
-            // ]);
-            $settingsData = is_object($result['globalSettings']) 
-                ? json_decode(json_encode($result['globalSettings']), true) 
-                : $result['globalSettings'];
+        if (isset($resultArray['globalSettings'])) {
+            $settingsData = is_object($resultArray['globalSettings']) 
+                ? json_decode(json_encode($resultArray['globalSettings']), true) 
+                : $resultArray['globalSettings'];
             
             $settings = new \ShipperHQ\WS\Rate\Response\GlobalSettings(
                 $settingsData,
@@ -505,13 +487,10 @@ class Mapper
         }
 
         // Map merged rate response
-        if (isset($result['mergedRateResponse'])) {
-            // $this->logger->debug('SHIPPERHQ: Processing merged rate response', [
-            //     'merged' => $result['mergedRateResponse']
-            // ]);
-            $mergedData = is_object($result['mergedRateResponse']) 
-                ? json_decode(json_encode($result['mergedRateResponse']), true) 
-                : $result['mergedRateResponse'];
+        if (isset($resultArray['mergedRateResponse'])) {
+            $mergedData = is_object($resultArray['mergedRateResponse']) 
+                ? json_decode(json_encode($resultArray['mergedRateResponse']), true) 
+                : $resultArray['mergedRateResponse'];
             
             $mergedResponse = new \ShipperHQ\WS\Rate\Response\Merge\MergedRateResponse();
             $mergedRates = array_map(function ($rate) {
@@ -533,16 +512,25 @@ class Mapper
         }
 
         // Map carrier group responses
-        if (isset($result['carrierGroups'])) {
-            // $this->logger->debug('SHIPPERHQ: Processing carrier groups', [
-            //     'groups' => $result['carrierGroups']
-            // ]);
-            $carrierGroupResponses = array_map(function ($groupResponse) {
+        if (isset($resultArray['carrierGroups'])) {
+            // Initialize the array outside the loop so it accumulates across all groups
+            $carrierRatesResponses = [];
+            
+            $this->logger->debug('SHIPPERHQ: Processing carrier groups', [
+                'count' => count($resultArray['carrierGroups'])
+            ]);
+            
+            $carrierGroupResponses = array_map(function ($groupResponse) use (&$carrierRatesResponses) {
                 // Convert group response object to array if needed
                 if (is_object($groupResponse)) {
                     $groupResponse = json_decode(json_encode($groupResponse), true);
                 }
-                $response = new \ShipperHQ\WS\Rate\Response\Shipping\CarrierGroupResponse();
+                
+                $this->logger->debug('SHIPPERHQ: Processing carrier group', [
+                    'group' => $groupResponse
+                ]);
+                
+                $carrierGroupResponse = new \ShipperHQ\WS\Rate\Response\Shipping\CarrierGroupResponse();
                 
                 // Set carrier group detail
                 $carrierGroupId = $groupResponse['carrierGroupId'] ?? '';
@@ -551,7 +539,7 @@ class Mapper
                     $carrierGroupId,
                     $carrierGroupName
                 );
-                $response->setCarrierGroupDetail($carrierGroupDetail);
+                $carrierGroupResponse->setCarrierGroupDetail($carrierGroupDetail);
                 
                 // Set carrier rates
                 $carrierRates = $groupResponse['carrierRates'] ?? [];
@@ -562,15 +550,18 @@ class Mapper
                     $carrierRates = [];
                 }
                 
+                $this->logger->debug('SHIPPERHQ: Processing carrier rates in group', [
+                    'count' => count($carrierRates)
+                ]);
+                
                 // Convert carrier rates to CarrierRatesResponse objects
-                $carrierRatesResponses = [];
                 foreach ($carrierRates as $rate) {
                     $carrierRateResponse = new \ShipperHQ\WS\Rate\Response\Shipping\CarrierRatesResponse();
                     $carrierRateResponse->setCarrierCode($rate['carrierCode'] ?? '');
                     $carrierRateResponse->setCarrierTitle($rate['carrierTitle'] ?? '');
                     
                     // Set shipping rates
-                    $shippingRates = $rate['shippingRates'] ?? [];
+                    $shippingRates = $rate['rates'] ?? [];
                     if (is_object($shippingRates)) {
                         $shippingRates = json_decode(json_encode($shippingRates), true);
                     }
@@ -578,23 +569,30 @@ class Mapper
                         $shippingRates = [];
                     }
                     
+                    $this->logger->debug('SHIPPERHQ: Processing shipping rates for carrier', [
+                        'carrier_code' => $rate['carrierCode'] ?? '',
+                        'count' => count($shippingRates)
+                    ]);
+                    
                     // Convert shipping rates to ShippingRate objects
                     $shippingRateObjects = [];
                     foreach ($shippingRates as $shippingRate) {
                         $shippingRateObject = new \ShipperHQ\WS\Rate\Response\ShippingRate();
                         $shippingRateObject->setCarrierCode($shippingRate['carrierCode'] ?? '');
-                        $shippingRateObject->setMethodCode($shippingRate['methodCode'] ?? '');
-                        $shippingRateObject->setMethodTitle($shippingRate['methodTitle'] ?? '');
-                        $shippingRateObject->setTotalPrice($shippingRate['totalPrice'] ?? 0.0);
-                        $shippingRateObject->setCurrencyCode($shippingRate['currencyCode'] ?? '');
+                        $shippingRateObject->setMethodCode($shippingRate['code'] ?? '');
+                        $shippingRateObject->setMethodTitle($shippingRate['name'] ?? '');
+                        $shippingRateObject->setTotalPrice($shippingRate['shippingPrice'] ?? 0.0);
+                        $shippingRateObject->setCurrencyCode($shippingRate['currency'] ?? '');
                         $shippingRateObject->setAttributes($shippingRate['attributes'] ?? []);
                         $shippingRateObjects[] = $shippingRateObject;
                     }
-                    $carrierRateResponse->setCarrierRates($shippingRateObjects);
+                    
+                    // Set the rates directly on the CarrierRatesResponse object
+                    $carrierRateResponse->setRates($shippingRateObjects);
                     
                     $carrierRatesResponses[] = $carrierRateResponse;
                 }
-                $response->setCarrierRates($carrierRatesResponses);
+                $carrierGroupResponse->setCarrierRates($carrierRatesResponses);
                 
                 // Set products if available
                 $products = $groupResponse['products'] ?? [];
@@ -613,21 +611,20 @@ class Mapper
                     // This will depend on the structure of your product data
                     $productInfos[] = $productInfo;
                 }
-                $response->setProducts($productInfos);
+                $carrierGroupResponse->setProducts($productInfos);
                 
-                return $response;
-            }, $result['carrierGroups']);
+                return $carrierGroupResponse;
+            }, $resultArray['carrierGroups']);
             $rateResponse->setCarrierGroupResponses($carrierGroupResponses);
+        } else {
+            $this->logger->warning('SHIPPERHQ: No carrier groups found in response');
         }
 
         // Map address validation response if present
-        if (isset($result['addressValidationResponse'])) {
-            // $this->logger->debug('SHIPPERHQ: Processing address validation', [
-            //     'validation' => $result['addressValidationResponse']
-            // ]);
-            $validationData = is_object($result['addressValidationResponse']) 
-                ? json_decode(json_encode($result['addressValidationResponse']), true) 
-                : $result['addressValidationResponse'];
+        if (isset($resultArray['addressValidationResponse'])) {
+            $validationData = is_object($resultArray['addressValidationResponse']) 
+                ? json_decode(json_encode($resultArray['addressValidationResponse']), true) 
+                : $resultArray['addressValidationResponse'];
             
             $validationResponse = new \ShipperHQ\WS\Rate\Response\AV\AddressValidationResponse();
             $validationResponse->setErrors($validationData['errors'] ?? []);
@@ -636,11 +633,7 @@ class Mapper
         }
 
         // Check if we have errors in the response
-        if (isset($result['errors']) && !empty($result['errors'])) {
-            // $this->logger->debug('SHIPPERHQ: Found errors in response', [
-            //     'errors' => $result['errors']
-            // ]);
-            
+        if (isset($resultArray['errors']) && !empty($resultArray['errors'])) {
             // Create a ResponseSummary if not already set
             if (!$rateResponse->getResponseSummary()) {
                 $summary = new \ShipperHQ\WS\Rate\Response\ResponseSummary(
@@ -652,39 +645,7 @@ class Mapper
                 $rateResponse->setResponseSummary($summary);
             }
         }
-
-        $mappedResponse = $rateResponse->toArray();
         
-        // Manually add errors and response summary to the mapped response
-        if ($rateResponse->getErrors()) {
-            $mappedResponse['errors'] = array_map(function ($error) {
-                return [
-                    'errorCode' => $error->getErrorCode(),
-                    'internalErrorMessage' => $error->getInternalErrorMessage(),
-                    'externalErrorMessage' => $error->getExternalErrorMessage(),
-                    'priority' => $error->getPriority()
-                ];
-            }, $rateResponse->getErrors());
-        }
-        
-        if ($rateResponse->getResponseSummary()) {
-            $summary = $rateResponse->getResponseSummary();
-            $mappedResponse['responseSummary'] = [
-                'date' => $summary->getDate(),
-                'version' => $summary->getVersion(),
-                'transactionId' => $summary->getTransactionId(),
-                'status' => $summary->getStatus(),
-                'profileId' => $summary->getProfileId(),
-                'profileName' => $summary->getProfileName(),
-                'cacheStatus' => $summary->getCacheStatus(),
-                'experimentName' => $summary->getExperimentName()
-            ];
-        }
-
-        // $this->logger->debug('SHIPPERHQ: Final mapped response', [
-        //     'mapped_response' => $mappedResponse
-        // ]);
-
-        return $mappedResponse;
+        return $rateResponse;
     }
 } 

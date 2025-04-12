@@ -19,24 +19,29 @@ use Shopware\Core\Checkout\Customer\Aggregate\CustomerAddress\CustomerAddressEnt
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Symfony\Component\HttpFoundation\Session\SessionFactoryInterface;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
+use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 
 class ShippingRateCache
 {
     private const CACHE_KEY = 'shipperhq_shipping_rates';
-    private const CACHE_LIFETIME = 3600; // 1 hour in seconds
+    private const CACHE_LIFETIME = 300; // 5 minutes in seconds
     
     private SessionFactoryInterface $sessionFactory;
     private LoggerInterface $logger;
     private ShipperHQBatchRateProvider $batchRateProvider;
+    private EntityRepository $shippingMethodRepository;
 
     public function __construct(
         SessionFactoryInterface $sessionFactory,
         LoggerInterface $logger,
-        ShipperHQBatchRateProvider $batchRateProvider
+        ShipperHQBatchRateProvider $batchRateProvider,
+        EntityRepository $shippingMethodRepository
     ) {
         $this->sessionFactory = $sessionFactory;
         $this->logger = $logger;
         $this->batchRateProvider = $batchRateProvider;
+        $this->shippingMethodRepository = $shippingMethodRepository;
     }
 
     /**
@@ -81,7 +86,7 @@ class ShippingRateCache
         $this->logger->debug('Fetching new shipping rates from ShipperHQ');
         $rates = $this->batchRateProvider->getBatchRates($cart, $context);
         
-        // Cache the rates if we got any
+        // Only cache the rates if we got any
         if ($rates !== null && !empty($rates)) {
             $this->cacheRates($cacheKey, $rates);
             return $rates;
@@ -103,14 +108,87 @@ class ShippingRateCache
     {
         $rates = $this->getRates($cart, $context);
         
-        foreach ($rates as $rate) {
-            if ($rate['methodCode'] === $shippingMethodId) {
-                return (float) $rate['price'];
+        // First check if we have a direct match by shipping method ID
+        if (isset($rates[$shippingMethodId]) && isset($rates[$shippingMethodId]['price'])) {
+            $this->logger->debug('Found rate by shipping method ID', [
+                'method_id' => $shippingMethodId,
+                'price' => $rates[$shippingMethodId]['price']
+            ]);
+            return (float) $rates[$shippingMethodId]['price'];
+        }
+        
+        // Get the shipping method details
+        $criteria = new Criteria([$shippingMethodId]);
+        $shippingMethod = $this->shippingMethodRepository->search($criteria, $context->getContext())->first();
+        
+        if (!$shippingMethod) {
+            $this->logger->warning('Shipping method not found', [
+                'method_id' => $shippingMethodId
+            ]);
+            return null;
+        }
+        
+        // Try matching by custom fields first
+        $customFields = $shippingMethod->getCustomFields() ?? [];
+        if (isset($customFields['shipperhq_carrier_code']) && isset($customFields['shipperhq_method_code'])) {
+            $carrierCode = $customFields['shipperhq_carrier_code'];
+            $methodCode = $customFields['shipperhq_method_code'];
+            
+            foreach ($rates as $rate) {
+                if (isset($rate['carrierCode']) && isset($rate['methodCode']) &&
+                    strtolower($rate['carrierCode']) === strtolower($carrierCode) && 
+                    $rate['methodCode'] === $methodCode) {
+                    
+                    $this->logger->debug('Found matching rate by custom fields', [
+                        'method_id' => $shippingMethodId,
+                        'carrier_code' => $carrierCode,
+                        'method_code' => $methodCode,
+                        'price' => $rate['price'] ?? null
+                    ]);
+                    
+                    return isset($rate['price']) ? (float) $rate['price'] : null;
+                }
+            }
+        }
+        
+        // Fall back to technical name parsing if custom fields didn't work
+        $technicalName = $shippingMethod->getTechnicalName();
+        if (str_starts_with($technicalName, 'shq')) {
+            $parts = explode('-', substr($technicalName, 3));
+            if (count($parts) === 2) {
+                $carrierCode = $parts[0];
+                $methodCode = $parts[1];
+                
+                foreach ($rates as $rate) {
+                    if (isset($rate['carrierCode']) && isset($rate['methodCode']) &&
+                        strtolower($rate['carrierCode']) === strtolower($carrierCode) && 
+                        $rate['methodCode'] === $methodCode) {
+                        
+                        $this->logger->debug('Found matching rate by technical name', [
+                            'method_id' => $shippingMethodId,
+                            'technical_name' => $technicalName,
+                            'carrier_code' => $carrierCode,
+                            'method_code' => $methodCode,
+                            'price' => $rate['price'] ?? null
+                        ]);
+                        
+                        return isset($rate['price']) ? (float) $rate['price'] : null;
+                    }
+                }
             }
         }
         
         $this->logger->debug('No rate found for shipping method', [
-            'shippingMethodId' => $shippingMethodId
+            'method_id' => $shippingMethodId,
+            'technical_name' => $technicalName ?? null,
+            'custom_fields' => $customFields,
+            'available_rates' => array_map(function($rate) {
+                return [
+                    'carrier_code' => $rate['carrierCode'] ?? null,
+                    'method_code' => $rate['methodCode'] ?? null,
+                    'price' => $rate['price'] ?? null
+                ];
+            }, $rates)
         ]);
         
         return null;
@@ -123,9 +201,11 @@ class ShippingRateCache
     {
         $this->logger->debug('Clearing shipping rate cache');
         
+        $session = $this->getSession();
+        
         // Get all session keys
         $sessionKeys = [];
-        foreach ($this->getSession()->all() as $key => $value) {
+        foreach ($session->all() as $key => $value) {
             if (strpos($key, self::CACHE_KEY) === 0) {
                 $sessionKeys[] = $key;
             }
@@ -133,8 +213,16 @@ class ShippingRateCache
         
         // Remove all cache entries
         foreach ($sessionKeys as $key) {
-            $this->getSession()->remove($key);
+            $session->remove($key);
+            $this->logger->debug('Removed cache entry', ['key' => $key]);
         }
+        
+        // Force session save
+        $session->save();
+        
+        $this->logger->info('Shipping rate cache cleared', [
+            'removed_keys' => $sessionKeys
+        ]);
     }
 
     /**
@@ -278,6 +366,14 @@ class ShippingRateCache
      */
     private function cacheRates(string $cacheKey, array $rates): void
     {
+        // Only cache if we have rates
+        if (empty($rates)) {
+            $this->logger->debug('Not caching empty rates', [
+                'cacheKey' => $cacheKey
+            ]);
+            return;
+        }
+        
         $cacheData = [
             'timestamp' => time(),
             'rates' => $rates

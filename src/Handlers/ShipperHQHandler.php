@@ -157,6 +157,14 @@ class ShipperHQHandler
         // Get a default delivery time ID
         $deliveryTimeId = $this->getDeliveryTimeId($context);
 
+        // Get all active sales channels
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('active', true));
+        $salesChannels = $this->container->get('sales_channel.repository')->search($criteria, $context);
+        
+        $salesChannelIds = array_map(function($salesChannel) {
+            return ['id' => $salesChannel->getId()];
+        }, $salesChannels->getElements());
         
         $data = [
             'id' => $id,
@@ -175,8 +183,15 @@ class ShipperHQHandler
             'availabilityRule' => [
                 'name' => 'All customers',
                 'priority' => 0
-            ]
+            ],
+            'salesChannels' => $salesChannelIds
         ];
+
+        $this->logger->info('Creating shipping method with data: ', [
+            'method_id' => $id,
+            'name' => $carrierTitleMethodName,
+            'sales_channels' => count($salesChannelIds)
+        ]);
 
         $this->shippingMethodRepository->create([$data], $context);
     }
@@ -199,6 +214,15 @@ class ShipperHQHandler
         // Get a default delivery time ID
         $deliveryTimeId = $this->getDeliveryTimeId($context);
         
+        // Get all active sales channels
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('active', true));
+        $salesChannels = $this->container->get('sales_channel.repository')->search($criteria, $context);
+        
+        $salesChannelIds = array_map(function($salesChannel) {
+            return ['id' => $salesChannel->getId()];
+        }, $salesChannels->getElements());
+        
         $data = [
             'id' => $id,
             'name' => $carrierTitleMethodName ?? 'ShipperHQ Method',
@@ -211,8 +235,15 @@ class ShipperHQHandler
                 'shipperhq_method_name' => $newAllowedMethod['methodName'] ?? '',
                 'shipperhq_carrier_code' => $newAllowedMethod['carrierCode'] ?? '',
                 'shipperhq_carrier_title' => $newAllowedMethod['carrierTitle'] ?? ''
-            ]
+            ],
+            'salesChannels' => $salesChannelIds
         ];
+
+        $this->logger->info('Updating shipping method with data: ', [
+            'method_id' => $id,
+            'name' => $carrierTitleMethodName,
+            'sales_channels' => count($salesChannelIds)
+        ]);
 
         $this->shippingMethodRepository->update([$data], $context);
     }

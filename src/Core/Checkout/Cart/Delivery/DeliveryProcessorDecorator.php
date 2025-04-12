@@ -44,7 +44,7 @@ class DeliveryProcessorDecorator implements CartProcessorInterface, CartDataColl
 
         // Get all ShipperHQ methods
         $criteria = new \Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria();
-        $criteria->addFilter(new \Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter('customFields.shipperhq_method', true));
+        $criteria->addFilter(new \Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter('customFields.shipperhq_carrier_code', 'shqflat'));
         $criteria->addAssociation('prices');
         $criteria->addAssociation('deliveryTime');
         $criteria->addAssociation('tax');
@@ -93,12 +93,60 @@ class DeliveryProcessorDecorator implements CartProcessorInterface, CartDataColl
         // Let the core handle the delivery processing
         $this->decorated->process($data, $original, $toCalculate, $context, $behavior);
 
+        // Check if we have any deliveries
+        if ($toCalculate->getDeliveries()->count() === 0) {
+            $this->logger->debug('SHIPPERHQ: No deliveries found, checking if we need to create one');
+            
+            // Get the current shipping method
+            $shippingMethod = $context->getShippingMethod();
+            $customFields = $shippingMethod->getCustomFields() ?? [];
+            
+            // Check if this is a ShipperHQ method
+            $isShipperHQ = isset($customFields['shipperhq_carrier_code']) && 
+                           isset($customFields['shipperhq_method_code']);
+            
+            if ($isShipperHQ) {
+                $this->logger->debug('SHIPPERHQ: Creating delivery for ShipperHQ method', [
+                    'method_id' => $shippingMethod->getId(),
+                    'method_name' => $shippingMethod->getName()
+                ]);
+                
+                // Get all physical line items that need shipping
+                $deliveryLineItems = $toCalculate->getLineItems()->filter(function ($lineItem) {
+                    return $lineItem->getDeliveryInformation() && !$lineItem->getDeliveryInformation()->getFreeDelivery();
+                });
+                
+                if ($deliveryLineItems->count() > 0) {
+                    // Create a delivery for the ShipperHQ method
+                    $delivery = new Delivery(
+                        $deliveryLineItems,
+                        $shippingMethod,
+                        $context->getShippingLocation(),
+                        null, // No delivery date required
+                        $shippingMethod->getDeliveryTime() // Use shipping method's delivery time
+                    );
+                    
+                    // Add the delivery to the cart
+                    $toCalculate->addDelivery($delivery);
+                    
+                    $this->logger->debug('SHIPPERHQ: Created delivery for ShipperHQ method', [
+                        'method_id' => $shippingMethod->getId(),
+                        'method_name' => $shippingMethod->getName(),
+                        'line_items_count' => $deliveryLineItems->count()
+                    ]);
+                } else {
+                    $this->logger->debug('SHIPPERHQ: No physical line items found that need shipping');
+                }
+            }
+        }
+
         // Log the final deliveries
         foreach ($toCalculate->getDeliveries() as $delivery) {
             $this->logger->debug('SHIPPERHQ: Final delivery', [
                 'method_id' => $delivery->getShippingMethod()->getId(),
                 'method_name' => $delivery->getShippingMethod()->getName(),
-                'shipping_costs' => $delivery->getShippingCosts() ? $delivery->getShippingCosts()->getTotalPrice() : 0
+                'shipping_costs' => $delivery->getShippingCosts() ? $delivery->getShippingCosts()->getTotalPrice() : 0,
+                'line_items_count' => $delivery->getPositions()->count()
             ]);
         }
     }

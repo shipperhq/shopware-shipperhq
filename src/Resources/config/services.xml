@@ -78,6 +78,7 @@
             <argument type="service" id="session.factory"/>
             <argument type="service" id="logger"/>
             <argument type="service" id="SHQ\RateProvider\Service\ShipperHQBatchRateProvider"/>
+            <argument type="service" id="shipping_method.repository"/>
         </service>
 
         <!-- Commented out as we're using DeliveryCalculatorDecorator instead -->
@@ -114,7 +115,13 @@
             <argument type="service" id="Shopware\Core\Checkout\Cart\Tax\PercentageTaxRuleBuilder"/>
             <argument type="service" id="logger"/>
             <argument type="service" id="SHQ\RateProvider\Service\ShippingRateCache"/>
+            <argument type="service" id="shipping_method.repository"/>
             <tag name="shopware.service"/>
+        </service>
+
+        <service id="SHQ\RateProvider\Command\ClearShippingRateCacheCommand">
+            <argument type="service" id="SHQ\RateProvider\Service\ShippingRateCache"/>
+            <tag name="console.command"/>
         </service>
     </services>
 </container>

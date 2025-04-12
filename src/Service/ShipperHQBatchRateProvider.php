@@ -146,28 +146,35 @@ class ShipperHQBatchRateProvider
         $this->logger->info('SHIPPERHQ: Found all shipping methods', [
             'total_methods' => count($shippingMethods),
             'methods' => array_map(function($method) {
+                $customFields = $method->getCustomFields() ?? [];
                 return [
                     'id' => $method->getId(),
                     'name' => $method->getName(),
                     'technical_name' => $method->getTechnicalName(),
-                    'active' => $method->getActive()
+                    'active' => $method->getActive(),
+                    'custom_fields' => $customFields
                 ];
             }, $shippingMethods)
         ]);
         
-        // Filter to only include ShipperHQ methods
+        // Filter to only include ShipperHQ methods by checking custom fields
         $shipperHQMethods = array_filter($shippingMethods, function ($method) {
-            return str_starts_with($method->getTechnicalName(), 'shq');
+            $customFields = $method->getCustomFields() ?? [];
+            return isset($customFields['shipperhq_carrier_code']) && 
+                   isset($customFields['shipperhq_method_code']);
         });
         
         $this->logger->info('SHIPPERHQ: Filtered ShipperHQ methods', [
             'total_shipperhq_methods' => count($shipperHQMethods),
             'shipperhq_methods' => array_map(function($method) {
+                $customFields = $method->getCustomFields() ?? [];
                 return [
                     'id' => $method->getId(),
                     'name' => $method->getName(),
                     'technical_name' => $method->getTechnicalName(),
-                    'active' => $method->getActive()
+                    'active' => $method->getActive(),
+                    'carrier_code' => $customFields['shipperhq_carrier_code'] ?? '',
+                    'method_code' => $customFields['shipperhq_method_code'] ?? ''
                 ];
             }, $shipperHQMethods)
         ]);
@@ -207,196 +214,149 @@ class ShipperHQBatchRateProvider
     }
 
     /**
-     * Process the rates response from ShipperHQ
+     * Process the rates response from the API
      *
-     * @param array $ratesResponse
+     * @param \ShipperHQ\WS\Rate\Response\RateResponse $response
      * @param array $shippingMethods
      * @return array
      */
-    private function processRatesResponse($ratesResponse, array $shippingMethods): array
+    private function processRatesResponse(\ShipperHQ\WS\Rate\Response\RateResponse $response, array $shippingMethods): array
     {
-        $processedRates = [];
+        $rates = [];
         
-        // Convert to array if it's an object
-        if (is_object($ratesResponse)) {
-            $this->logger->info('SHIPPERHQ: Converting object response to array');
-            $ratesResponse = json_decode(json_encode($ratesResponse), true);
+        // Check for errors in the response
+        if ($response->getErrors() && count($response->getErrors()) > 0) {
+            foreach ($response->getErrors() as $error) {
+                $this->logger->error('SHIPPERHQ: API Error', [
+                    'code' => $error->getErrorCode(),
+                    'message' => $error->getInternalErrorMessage(),
+                    'external_message' => $error->getExternalErrorMessage()
+                ]);
+            }
+            return $rates;
         }
         
-        $this->logger->info('SHIPPERHQ: Processing rates response', [
-            'response_type' => gettype($ratesResponse),
-            'is_array' => is_array($ratesResponse),
-            'response' => $ratesResponse
+        // Process carrier group responses
+        $carrierGroupResponses = $response->getCarrierGroupResponses();
+        if (!$carrierGroupResponses) {
+            $this->logger->warning('SHIPPERHQ: No carrier group responses found');
+            return $rates;
+        }
+        
+        $this->logger->debug('SHIPPERHQ: Processing carrier group responses', [
+            'count' => count($carrierGroupResponses)
         ]);
         
-        if (!is_array($ratesResponse)) {
-            $this->logger->error('SHIPPERHQ: Invalid rates response format', [
-                'type' => gettype($ratesResponse)
+        foreach ($carrierGroupResponses as $index => $carrierGroupResponse) {
+            $this->logger->debug('SHIPPERHQ: Processing carrier group response', [
+                'index' => $index,
+                'response' => json_encode($carrierGroupResponse)
             ]);
-            return [];
-        }
-
-        // Process merged rates if available
-        if (isset($ratesResponse['mergedRateResponse']['shippingRates'])) {
-            foreach ($ratesResponse['mergedRateResponse']['shippingRates'] as $rate) {
-                if (!isset($rate['methodCode']) || !isset($rate['totalPrice'])) {
-                    $this->logger->warning('SHIPPERHQ: Rate missing required fields', [
-                        'rate' => $rate
-                    ]);
-                    continue;
-                }
-                
-                // Map ShipperHQ carrier/method to Shopware shipping method ID
-                $methodId = $this->mapCarrierMethodToShopwareId($rate, $shippingMethods);
-                
-                if (!$methodId) {
-                    $this->logger->warning('SHIPPERHQ: Could not map rate to shipping method', [
-                        'rate' => $rate
-                    ]);
-                    continue;
-                }
-
-                // Calculate tax
-                $taxRate = 0.0; // Default tax rate
-                if (isset($rate['taxAmount']) && $rate['totalPrice'] > 0) {
-                    $taxRate = ($rate['taxAmount'] / $rate['totalPrice']) * 100;
-                }
-                
-                $processedRates[$methodId] = [
-                    'methodCode' => $methodId,
-                    'gross' => (float) $rate['totalPrice'],
-                    'net' => (float) ($rate['totalPrice'] - ($rate['taxAmount'] ?? 0)),
-                    'tax_rate' => $taxRate,
-                    'carrierCode' => $rate['carrierCode'] ?? '',
-                    'carrierTitle' => $rate['carrierTitle'] ?? '',
-                    'methodTitle' => $rate['methodTitle'] ?? '',
-                    'transitTime' => $rate['transitTime'] ?? null,
-                    'deliveryDate' => $rate['deliveryDate'] ?? null
-                ];
+            
+            $carrierRates = $carrierGroupResponse->getCarrierRates();
+            if (!$carrierRates) {
+                $this->logger->warning('SHIPPERHQ: No carrier rates found in carrier group response', [
+                    'index' => $index
+                ]);
+                continue;
             }
-        }
+            
+            $this->logger->debug('SHIPPERHQ: Processing carrier rates', [
+                'count' => count($carrierRates)
+            ]);
 
-        // Process carrier group responses if no merged rates
-        if (empty($processedRates) && isset($ratesResponse['carrierGroupResponses'])) {
-            foreach ($ratesResponse['carrierGroupResponses'] as $groupResponse) {
-                if (!isset($groupResponse['carrierRates'])) {
+            foreach ($carrierRates as $carrierRate) {
+                // Get the rates array directly from the CarrierRatesResponse object
+                $shippingRates = $carrierRate->getRates();
+                if (!$shippingRates || empty($shippingRates)) {
+                    $this->logger->warning('SHIPPERHQ: No shipping rates found for carrier', [
+                        'carrier_code' => $carrierRate->getCarrierCode(),
+                        'carrier_title' => $carrierRate->getCarrierTitle()
+                    ]);
                     continue;
                 }
+                
+                $this->logger->debug('SHIPPERHQ: Processing shipping rates', [
+                    'carrier_code' => $carrierRate->getCarrierCode(),
+                    'count' => count($shippingRates)
+                ]);
 
-                foreach ($groupResponse['carrierRates'] as $carrierRate) {
-                    if (!isset($carrierRate['rates'])) {
+                // Process each shipping rate
+                foreach ($shippingRates as $rate) {
+                    if (!$rate->getMethodCode() || !$rate->getTotalPrice()) {
+                        $this->logger->warning('SHIPPERHQ: Rate missing required fields', [
+                            'rate' => json_encode($rate)
+                        ]);
                         continue;
                     }
 
-                    foreach ($carrierRate['rates'] as $rate) {
-                        if (!isset($rate['methodCode']) || !isset($rate['totalPrice'])) {
-                            continue;
-                        }
-
-                        // Map ShipperHQ carrier/method to Shopware shipping method ID
-                        $methodId = $this->mapCarrierMethodToShopwareId($rate, $shippingMethods);
-                
-                        if (!$methodId) {
-                            continue;
-                        }
-
-                        // Calculate tax
-                        $taxRate = 0.0; // Default tax rate
-                        if (isset($rate['taxAmount']) && $rate['totalPrice'] > 0) {
-                            $taxRate = ($rate['taxAmount'] / $rate['totalPrice']) * 100;
-                        }
-
-                        $processedRates[$methodId] = [
-                            'methodCode' => $methodId,
-                            'gross' => (float) $rate['totalPrice'],
-                            'net' => (float) ($rate['totalPrice'] - ($rate['taxAmount'] ?? 0)),
-                            'tax_rate' => $taxRate,
-                            'carrierCode' => $carrierRate['carrierCode'] ?? '',
-                            'carrierTitle' => $carrierRate['carrierTitle'] ?? '',
-                            'methodTitle' => $rate['methodTitle'] ?? '',
-                            'transitTime' => $rate['transitTime'] ?? null,
-                            'deliveryDate' => $rate['deliveryDate'] ?? null
-                        ];
+                    // Map ShipperHQ carrier/method to Shopware shipping method ID
+                    $methodId = $this->mapCarrierMethodToShopwareId($rate, $shippingMethods);
+                    if (!$methodId) {
+                        $this->logger->warning('SHIPPERHQ: Could not map carrier/method to Shopware shipping method', [
+                            'carrier_code' => $rate->getCarrierCode(),
+                            'method_code' => $rate->getMethodCode()
+                        ]);
+                        continue;
                     }
+
+                    // Add the rate to the result array
+                    $rates[$methodId] = [
+                        'price' => $rate->getTotalPrice(),
+                        'currency' => $rate->getCurrencyCode() ?: 'USD'
+                    ];
+                    
+                    $this->logger->debug('SHIPPERHQ: Added rate to result', [
+                        'method_id' => $methodId,
+                        'price' => $rate->getTotalPrice(),
+                        'currency' => $rate->getCurrencyCode() ?: 'USD'
+                    ]);
                 }
             }
         }
         
-        $this->logger->info('SHIPPERHQ: Processed rates', [
-            'processed_count' => count($processedRates),
-            'processed_rates' => $processedRates
-        ]);
-        
-        return $processedRates;
+        return $rates;
     }
 
     /**
-     * Map ShipperHQ carrier/method to Shopware shipping method ID
+     * Map a ShipperHQ carrier/method to a Shopware shipping method ID
      *
-     * @param array $rate
+     * @param \ShipperHQ\WS\Rate\Response\ShippingRate $rate
      * @param array $shippingMethods
      * @return string|null
      */
-    private function mapCarrierMethodToShopwareId(array $rate, array $shippingMethods): ?string
+    private function mapCarrierMethodToShopwareId(\ShipperHQ\WS\Rate\Response\ShippingRate $rate, array $shippingMethods): ?string
     {
-        $carrierCode = $rate['carrierCode'] ?? '';
-        $methodCode = $rate['methodCode'] ?? '';
+        $carrierCode = $rate->getCarrierCode();
+        $methodCode = $rate->getMethodCode();
         
-        $this->logger->info('SHIPPERHQ: Mapping carrier method to Shopware ID', [
+        // Log the mapping attempt
+        $this->logger->debug('SHIPPERHQ: Mapping carrier/method to shipping method', [
             'carrier_code' => $carrierCode,
             'method_code' => $methodCode
         ]);
         
-        // This mapping logic will depend on how you've set up your shipping methods
-        // For simplicity, we're assuming the ShipperHQ carrier+method code matches
-        // the technical name of the Shopware shipping method
-        
-        $shipperhqCode = "shq{$carrierCode}-{$methodCode}";
-        
-        $this->logger->info('SHIPPERHQ: Looking for shipping method with technical name', [
-            'shipperhq_code' => $shipperhqCode
-        ]);
-        
+        // Look for a matching shipping method
         foreach ($shippingMethods as $method) {
-            $technicalName = $method->getTechnicalName();
-            $this->logger->debug('SHIPPERHQ: Checking shipping method', [
-                'id' => $method->getId(),
-                'name' => $method->getName(),
-                'technical_name' => $technicalName
-            ]);
+            $customFields = $method->getCustomFields() ?? [];
+            $methodCarrierCode = $customFields['shipperhq_carrier_code'] ?? '';
+            $methodMethodCode = $customFields['shipperhq_method_code'] ?? '';
             
-            if ($technicalName === $shipperhqCode) {
-                $this->logger->info('SHIPPERHQ: Found exact match for shipping method', [
-                    'id' => $method->getId(),
-                    'name' => $method->getName(),
-                    'technical_name' => $technicalName
-                ]);
+            if ($methodCarrierCode === $carrierCode && $methodMethodCode === $methodCode) {
                 return $method->getId();
             }
         }
         
-        // If no direct match, try matching just by carrier
-        $carrierPrefix = "shq{$carrierCode}";
-        $this->logger->info('SHIPPERHQ: No exact match, trying carrier prefix', [
-            'carrier_prefix' => $carrierPrefix
-        ]);
-        
+        // If no exact match, try a more flexible approach
         foreach ($shippingMethods as $method) {
-            $technicalName = $method->getTechnicalName();
-            if (strpos($technicalName, $carrierPrefix) === 0) {
-                $this->logger->info('SHIPPERHQ: Found carrier match for shipping method', [
-                    'id' => $method->getId(),
-                    'name' => $method->getName(),
-                    'technical_name' => $technicalName
-                ]);
+            $customFields = $method->getCustomFields() ?? [];
+            $methodCarrierCode = $customFields['shipperhq_carrier_code'] ?? '';
+            
+            // If we have a carrier code match but no method code, use the first method
+            if ($methodCarrierCode === $carrierCode && empty($methodMethodCode)) {
                 return $method->getId();
             }
         }
-        
-        $this->logger->warning('SHIPPERHQ: No matching shipping method found', [
-            'carrier_code' => $carrierCode,
-            'method_code' => $methodCode
-        ]);
         
         return null;
     }

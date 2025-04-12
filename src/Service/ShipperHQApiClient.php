@@ -165,7 +165,7 @@ class ShipperHQApiClient
      * Entry point for getting rates for all methods in a single API call
      * 3/11/2025
      */
-    public function getRatesForAllMethods(RateRequest $request): ?array
+    public function getRatesForAllMethods(RateRequest $request): ?\ShipperHQ\WS\Rate\Response\RateResponse
     {
         try {
             // Add credentials and site details if not already set
@@ -190,12 +190,30 @@ class ShipperHQApiClient
                 return null;
             }
 
+            // Check if the result is an object and convert it to an array if needed
+            $resultData = $result['result'];
+            if (is_object($resultData)) {
+                $this->logger->debug('SHIPPERHQ: Converting result object to array', [
+                    'result_type' => gettype($resultData)
+                ]);
+                $resultData = json_decode(json_encode($resultData), true);
+            }
+
+            // Check if the result has the expected structure
+            if (!isset($resultData['carrierGroups']) && !isset($resultData['mergedRateResponse'])) {
+                $this->logger->warning('SHIPPERHQ: Result does not have expected structure', [
+                    'result_keys' => array_keys($resultData)
+                ]);
+            }
+
             // Map the response using the Mapper
-            $mappedResponse = $this->mapper->mapResponse($result['result']);
+            $mappedResponse = $this->mapper->mapResponse($resultData);
             
-            // $this->logger->debug('SHIPPERHQ: Mapped response', [
-            //     'mapped_response' => $mappedResponse
-            // ]);
+            $this->logger->debug('SHIPPERHQ: Mapped response', [
+                'has_errors' => $mappedResponse->getErrors() && count($mappedResponse->getErrors()) > 0,
+                'has_carrier_groups' => $mappedResponse->getCarrierGroupResponses() && count($mappedResponse->getCarrierGroupResponses()) > 0,
+                'carrier_groups_count' => $mappedResponse->getCarrierGroupResponses() ? count($mappedResponse->getCarrierGroupResponses()) : 0
+            ]);
 
             return $mappedResponse;
             
@@ -211,11 +229,11 @@ class ShipperHQApiClient
 
 
      /**
-     * Sends the JSON request to ShipperHQ
-     *
-     * @param WebServiceRequestInterface $request
-     * @param string|null $url
-     * @return array|null
+     * Sends a request to the ShipperHQ API
+     * 
+     * @param WebServiceRequestInterface $request The request to send
+     * @param string|null $url The URL to send the request to
+     * @return array|null The response from the API
      */
     private function sendRequest($request, ?string $url = null): ?array
     {
@@ -231,15 +249,9 @@ class ShipperHQApiClient
         $elapsed = microtime(true) - $initVal;
         $this->logger->debug('ShipperHQ API request time: ' . $elapsed);
 
-        // Convert stdClass to array
-        if (is_object($result)) {
-            $result = json_decode(json_encode($result), true);
-        }
-
         $this->logger->debug('ShipperHQ request and result', [
             'request' => $request,
-            'result' => $result['result'] ?? null,
-            'debug' => $result['debug']['json_request'] ?? []
+            'result' => $result
         ]);
 
         return $result;
