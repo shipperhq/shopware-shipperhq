@@ -106,7 +106,16 @@ class ShippingRateCache
      */
     public function getRateForMethod(string $shippingMethodId, Cart $cart, SalesChannelContext $context): ?float
     {
+        $this->logger->info('SHIPPERHQ: Getting rate for method', [
+            'method_id' => $shippingMethodId
+        ]);
+        
         $rates = $this->getRates($cart, $context);
+        
+        $this->logger->info('SHIPPERHQ: Got rates for method', [
+            'method_id' => $shippingMethodId,
+            'rates' => $rates
+        ]);
         
         // First check if we have a direct match by shipping method ID
         if (isset($rates[$shippingMethodId]) && isset($rates[$shippingMethodId]['price'])) {

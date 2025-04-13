@@ -146,7 +146,18 @@ class DeliveryCalculatorDecorator extends DeliveryCalculator
                 ]);
 
                 // Get the rate for this shipping method
+                $this->logger->info('SHIPPERHQ: Getting rate for method', [
+                    'method_id' => $shippingMethod->getId(),
+                    'method_name' => $shippingMethod->getName()
+                ]);
+                
                 $rate = $this->rateCache->getRateForMethod($shippingMethod->getId(), $cart, $context);
+                
+                $this->logger->info('SHIPPERHQ: Rate result for method', [
+                    'method_id' => $shippingMethod->getId(),
+                    'method_name' => $shippingMethod->getName(),
+                    'rate' => $rate
+                ]);
                 
                 if ($rate === null) {
                     $this->logger->warning('SHIPPERHQ: No rate found for shipping method, skipping', [
@@ -202,14 +213,32 @@ class DeliveryCalculatorDecorator extends DeliveryCalculator
             // If we have ShipperHQ deliveries, skip the core calculator
             if ($deliveries->count() > 0) {
                 $this->logger->info('SHIPPERHQ: Skipping core calculator as we have ShipperHQ deliveries', [
-                    'deliveries_count' => $deliveries->count()
+                    'deliveries_count' => $deliveries->count(),
+                    'delivery_methods' => array_map(function($delivery) {
+                        return [
+                            'method_id' => $delivery->getShippingMethod()->getId(),
+                            'method_name' => $delivery->getShippingMethod()->getName(),
+                            'shipping_costs' => $delivery->getShippingCosts()->getTotalPrice()
+                        ];
+                    }, $deliveries->getElements())
                 ]);
+
+                // Log the cart errors to see if there are any shipping-related errors
+                $this->logger->info('SHIPPERHQ: Cart errors after processing', [
+                    'errors' => array_map(function($error) {
+                        return [
+                            'type' => get_class($error),
+                            'message' => $error->getMessage()
+                        ];
+                    }, $cart->getErrors()->getElements())
+                ]);
+
                 return;
+            } else {
+                // If we don't have any ShipperHQ methods, let the core handle the calculation
+                $this->logger->info('SHIPPERHQ: No ShipperHQ methods found, letting core handle delivery calculation');
+                $this->decorated->calculate($data, $cart, $deliveries, $context);
             }
-        } else {
-            // If we don't have any ShipperHQ methods, let the core handle the calculation
-            $this->logger->info('SHIPPERHQ: No ShipperHQ methods found, letting core handle delivery calculation');
-            $this->decorated->calculate($data, $cart, $deliveries, $context);
         }
 
         $this->logger->info('SHIPPERHQ: Finished delivery calculation', [

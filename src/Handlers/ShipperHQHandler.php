@@ -166,6 +166,9 @@ class ShipperHQHandler
             return ['id' => $salesChannel->getId()];
         }, $salesChannels->getElements());
         
+        // Get or create an availability rule
+        $availabilityRuleId = $this->getAvailabilityRuleId($context);
+        
         $data = [
             'id' => $id,
             'name' => $carrierTitleMethodName ?? 'ShipperHQ Method',
@@ -180,22 +183,64 @@ class ShipperHQHandler
                 'shipperhq_carrier_code' => $newAllowedMethod['carrierCode'] ?? '',
                 'shipperhq_carrier_title' => $newAllowedMethod['carrierTitle'] ?? ''
             ],
-            'availabilityRule' => [
-                'name' => 'All customers',
-                'priority' => 0
-            ],
+            'availabilityRuleId' => $availabilityRuleId,
             'salesChannels' => $salesChannelIds
         ];
 
         $this->logger->info('Creating shipping method with data: ', [
             'method_id' => $id,
             'name' => $carrierTitleMethodName,
-            'sales_channels' => count($salesChannelIds)
+            'sales_channels' => count($salesChannelIds),
+            'availability_rule_id' => $availabilityRuleId
         ]);
 
         $this->shippingMethodRepository->create([$data], $context);
     }
 
+    /**
+     * Get the availability rule ID for shipping methods
+     * Uses the existing 'Cart >= 0' rule
+     */
+    private function getAvailabilityRuleId(Context $context): string
+    {
+        // Find the 'Cart >= 0' rule by name
+        $ruleCriteria = new Criteria();
+        $ruleCriteria->addFilter(new EqualsFilter('name', 'Cart >= 0'));
+        $ruleId = $this->container->get('rule.repository')->searchIds($ruleCriteria, $context)->firstId();
+        
+        if ($ruleId !== null) {
+            return $ruleId;
+        }
+        
+        // If not found, try to find any rule
+        $ruleCriteria = new Criteria();
+        $ruleCriteria->setLimit(1);
+        $ruleId = $this->container->get('rule.repository')->searchIds($ruleCriteria, $context)->firstId();
+        
+        if ($ruleId !== null) {
+            return $ruleId;
+        }
+        
+        // If no rule exists, create a new one
+        $ruleId = Uuid::randomHex();
+        $ruleData = [
+            'id' => $ruleId,
+            'name' => 'All customers',
+            'priority' => 0,
+            'description' => 'Rule for all customers',
+            'payload' => null,
+            'invalid' => false,
+            'areas' => null,
+            'moduleTypes' => null,
+            'customFields' => null,
+            'createdAt' => new \DateTimeImmutable(),
+            'updatedAt' => new \DateTimeImmutable()
+        ];
+        
+        $this->container->get('rule.repository')->create([$ruleData], $context);
+        
+        return $ruleId;
+    }
 
     /**
      * Updates a shipping method that already exists in Shopware DB with latest values from SHQ DB
@@ -223,6 +268,9 @@ class ShipperHQHandler
             return ['id' => $salesChannel->getId()];
         }, $salesChannels->getElements());
         
+        // Get or create an availability rule
+        $availabilityRuleId = $this->getAvailabilityRuleId($context);
+        
         $data = [
             'id' => $id,
             'name' => $carrierTitleMethodName ?? 'ShipperHQ Method',
@@ -236,13 +284,15 @@ class ShipperHQHandler
                 'shipperhq_carrier_code' => $newAllowedMethod['carrierCode'] ?? '',
                 'shipperhq_carrier_title' => $newAllowedMethod['carrierTitle'] ?? ''
             ],
+            'availabilityRuleId' => $availabilityRuleId,
             'salesChannels' => $salesChannelIds
         ];
 
         $this->logger->info('Updating shipping method with data: ', [
             'method_id' => $id,
             'name' => $carrierTitleMethodName,
-            'sales_channels' => count($salesChannelIds)
+            'sales_channels' => count($salesChannelIds),
+            'availability_rule_id' => $availabilityRuleId
         ]);
 
         $this->shippingMethodRepository->update([$data], $context);

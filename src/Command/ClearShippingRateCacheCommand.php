@@ -7,12 +7,11 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\Console\Attribute\AsCommand;
 
+#[AsCommand(name: 'shq:clear-shipping-rate-cache', description: 'Clears the ShipperHQ shipping rate cache')]
 class ClearShippingRateCacheCommand extends Command
 {
-    public static $defaultName = 'shq:clear-shipping-rate-cache';
-    public static $defaultDescription = 'Clears the ShipperHQ shipping rate cache';
-
     private ShippingRateCache $rateCache;
 
     public function __construct(ShippingRateCache $rateCache)
@@ -23,7 +22,7 @@ class ClearShippingRateCacheCommand extends Command
 
     protected function configure(): void
     {
-        $this->setDescription(self::$defaultDescription);
+        $this->setDescription('Clears the ShipperHQ shipping rate cache');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
