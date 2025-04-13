@@ -181,9 +181,11 @@ class DeliveryCalculatorDecorator extends DeliveryCalculator
                 $this->logger->info('SHIPPERHQ: Added delivery for method', [
                     'method_id' => $shippingMethod->getId(),
                     'method_name' => $shippingMethod->getName(),
-                    'rate' => $rate,
-                    'shipping_costs' => $shippingCosts->getTotalPrice(),
-                    'line_items_count' => $deliveryLineItems->count()
+                    'delivery' => [
+                        'shipping_costs' => $shippingCosts->getTotalPrice(),
+                        'shipping_method' => $shippingMethod->getName(),
+                        'positions_count' => count($delivery->getPositions())
+                    ]
                 ]);
 
                 // Remove any existing errors for this shipping method
@@ -198,12 +200,12 @@ class DeliveryCalculatorDecorator extends DeliveryCalculator
             }
 
             // If we have ShipperHQ deliveries, skip the core calculator
-            // if ($deliveries->count() > 0) {
-            //     $this->logger->info('SHIPPERHQ: Skipping core calculator as we have ShipperHQ deliveries', [
-            //         'deliveries_count' => $deliveries->count()
-            //     ]);
-            //     return;
-            // }
+            if ($deliveries->count() > 0) {
+                $this->logger->info('SHIPPERHQ: Skipping core calculator as we have ShipperHQ deliveries', [
+                    'deliveries_count' => $deliveries->count()
+                ]);
+                return;
+            }
         } else {
             // If we don't have any ShipperHQ methods, let the core handle the calculation
             $this->logger->info('SHIPPERHQ: No ShipperHQ methods found, letting core handle delivery calculation');
