@@ -2,6 +2,9 @@
 
 This plugin provides rate calculation functionality for shipping rates in Shopware 6.
 
+TODO Split out the internal from External
+
+
 ## Features
 
 - Integration with ShipperHQ rate calculation services
@@ -78,6 +81,26 @@ bin/console plugin:update SHQRateProvider
 ### Running Shopware
 
 
+## Troubleshooting Hell
+### If SQL stops working
+
+If everything else fails try this with tilt after stopping it as sometimes it gets confused:
+
+```
+kubevpn quit
+just s
+```
+
+### Change flake.nix and it reverts
+
+This is because the surrounding tilt has all the source nix files and just puts in and overrides, you can comment out if can find where!
+
+.tilt/templates/deployments/shopware/Tiltfile - comment this code out :
+```
+    # else:
+        # Always copy flake.nix and flake.lock to ensure they're up to date
+        # local("cp %s/flake.nix %s/flake.lock %s/" % (flake_dir, flake_dir, shopware.dir), echo_off=True, quiet=True)
+```
 
 ## Support
 
@@ -132,3 +155,6 @@ Will output something like:
 | 0x019582F5B6F67335BDFDE2EE6FEEA0BA | shqflat-fixed                    |      1 | Fixed Rate SHQ - Fixed          | ShipperHQ: Fixed Rate SHQ - Fixed          |
 +------------------------------------+----------------------------------+--------+---------------------------------+--------------------------------------------+
 25 rows in set (0.01 sec)
+
+
+
