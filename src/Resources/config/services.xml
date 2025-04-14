@@ -99,9 +99,7 @@
         </service>
 
         <service id="SHQ\RateProvider\Core\Checkout\Cart\Delivery\DeliveryCalculatorDecorator" decorates="Shopware\Core\Checkout\Cart\Delivery\DeliveryCalculator" public="true">
-            <argument type="service" id=".inner"/>
             <argument type="service" id="Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator"/>
-            <argument type="service" id="Shopware\Core\Checkout\Cart\Tax\PercentageTaxRuleBuilder"/>
             <argument type="service" id="logger"/>
             <argument type="service" id="SHQ\RateProvider\Service\ShippingRateCache"/>
             <argument type="service" id="shipping_method.repository"/>

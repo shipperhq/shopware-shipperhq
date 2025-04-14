@@ -3,13 +3,12 @@
 namespace SHQ\RateProvider\Core\Checkout\Cart\Delivery;
 
 use Shopware\Core\Checkout\Cart\Cart;
+use Shopware\Core\Checkout\Cart\Delivery\Struct\DeliveryPositionCollection;
 use Shopware\Core\Checkout\Cart\LineItem\CartDataCollection;
 use Shopware\Core\Checkout\Cart\Delivery\DeliveryCalculator;
 use Shopware\Core\Checkout\Cart\Delivery\Struct\DeliveryCollection;
-use Shopware\Core\Checkout\Cart\Delivery\DeliveryProcessor;
 use Shopware\Core\Checkout\Cart\Delivery\Struct\Delivery;
 use Shopware\Core\Checkout\Cart\Price\Struct\CalculatedPrice;
-use Shopware\Core\Framework\DataAbstractionLayer\Pricing\PriceCollection;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Shopware\Core\Checkout\Shipping\ShippingMethodEntity;
 use Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator;
@@ -17,7 +16,6 @@ use Shopware\Core\Checkout\Cart\Tax\PercentageTaxRuleBuilder;
 use Psr\Log\LoggerInterface;
 use Shopware\Core\Checkout\Shipping\ShippingMethodPriceCollection;
 use Shopware\Core\Checkout\Shipping\ShippingMethodPriceEntity;
-use Shopware\Core\Framework\Util\FloatComparator;
 use SHQ\RateProvider\Service\ShippingRateCache;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
@@ -31,23 +29,17 @@ class DeliveryCalculatorDecorator extends DeliveryCalculator
     private LoggerInterface $logger;
     private ShippingRateCache $rateCache;
     private QuantityPriceCalculator $priceCalculator;
-    private PercentageTaxRuleBuilder $percentageTaxRuleBuilder;
     private EntityRepository $shippingMethodRepository;
 
     public function __construct(
-        DeliveryCalculator $decorated,
         QuantityPriceCalculator $priceCalculator,
-        PercentageTaxRuleBuilder $percentageTaxRuleBuilder,
         LoggerInterface $logger,
         ShippingRateCache $rateCache,
         EntityRepository $shippingMethodRepository
     ) {
-        parent::__construct($priceCalculator, $percentageTaxRuleBuilder);
-        $this->decorated = $decorated;
         $this->logger = $logger;
         $this->rateCache = $rateCache;
         $this->priceCalculator = $priceCalculator;
-        $this->percentageTaxRuleBuilder = $percentageTaxRuleBuilder;
         $this->shippingMethodRepository = $shippingMethodRepository;
     }
 
@@ -96,7 +88,7 @@ class DeliveryCalculatorDecorator extends DeliveryCalculator
             }
 
             // Convert LineItemCollection to DeliveryPositionCollection
-            $deliveryPositions = new \Shopware\Core\Checkout\Cart\Delivery\Struct\DeliveryPositionCollection();
+            $deliveryPositions = new DeliveryPositionCollection();
             foreach ($deliveryLineItems as $lineItem) {
                 $deliveryPositions->add(new \Shopware\Core\Checkout\Cart\Delivery\Struct\DeliveryPosition(
                     $lineItem->getId(),
