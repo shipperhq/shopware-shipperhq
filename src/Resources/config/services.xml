@@ -121,5 +121,15 @@
             <argument type="service" id="SHQ\RateProvider\Service\ShippingRateCache"/>
             <tag name="console.command"/>
         </service>
+
+        <!-- Register ShippingMethodRouteDecorator -->
+        <service id="SHQ\RateProvider\Core\Checkout\Shipping\SalesChannel\ShippingMethodRouteDecorator"
+                 decorates="Shopware\Core\Checkout\Shipping\SalesChannel\ShippingMethodRoute">
+            <argument type="service" id=".inner"/>
+            <argument type="service" id="Shopware\Core\Checkout\Cart\Delivery\DeliveryCalculator"/>
+            <argument type="service" id="logger"/>
+            <argument type="service" id="request_stack"/>
+            <argument type="service" id="Shopware\Core\Checkout\Cart\SalesChannel\CartService"/>
+        </service>
     </services>
 </container>
