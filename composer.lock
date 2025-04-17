@@ -1051,26 +1051,29 @@
         },
         {
             "name": "doctrine/deprecations",
-            "version": "1.1.4",
+            "version": "1.1.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/doctrine/deprecations.git",
-                "reference": "31610dbb31faa98e6b5447b62340826f54fbc4e9"
+                "reference": "459c2f5dd3d6a4633d3b5f46ee2b1c40f57d3f38"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/doctrine/deprecations/zipball/31610dbb31faa98e6b5447b62340826f54fbc4e9",
-                "reference": "31610dbb31faa98e6b5447b62340826f54fbc4e9",
+                "url": "https://api.github.com/repos/doctrine/deprecations/zipball/459c2f5dd3d6a4633d3b5f46ee2b1c40f57d3f38",
+                "reference": "459c2f5dd3d6a4633d3b5f46ee2b1c40f57d3f38",
                 "shasum": ""
             },
             "require": {
                 "php": "^7.1 || ^8.0"
             },
+            "conflict": {
+                "phpunit/phpunit": "<=7.5 || >=13"
+            },
             "require-dev": {
-                "doctrine/coding-standard": "^9 || ^12",
-                "phpstan/phpstan": "1.4.10 || 2.0.3",
+                "doctrine/coding-standard": "^9 || ^12 || ^13",
+                "phpstan/phpstan": "1.4.10 || 2.1.11",
                 "phpstan/phpstan-phpunit": "^1.0 || ^2",
-                "phpunit/phpunit": "^7.5 || ^8.5 || ^9.5",
+                "phpunit/phpunit": "^7.5 || ^8.5 || ^9.6 || ^10.5 || ^11.5 || ^12",
                 "psr/log": "^1 || ^2 || ^3"
             },
             "suggest": {
@@ -1090,9 +1093,9 @@
             "homepage": "https://www.doctrine-project.org/",
             "support": {
                 "issues": "https://github.com/doctrine/deprecations/issues",
-                "source": "https://github.com/doctrine/deprecations/tree/1.1.4"
+                "source": "https://github.com/doctrine/deprecations/tree/1.1.5"
             },
-            "time": "2024-12-07T21:18:45+00:00"
+            "time": "2025-04-07T20:06:18+00:00"
         },
         {
             "name": "doctrine/event-manager",
@@ -5018,16 +5021,16 @@
         },
         {
             "name": "shopware/core",
-            "version": "v6.6.10.2",
+            "version": "v6.6.10.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/shopware/core.git",
-                "reference": "4eb7d2288a3bb926ad6af3ef9da295c19e85bc4b"
+                "reference": "078e6c7cc91e8e0c915a48fc1bc0d0e30459f1d7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/shopware/core/zipball/4eb7d2288a3bb926ad6af3ef9da295c19e85bc4b",
-                "reference": "4eb7d2288a3bb926ad6af3ef9da295c19e85bc4b",
+                "url": "https://api.github.com/repos/shopware/core/zipball/078e6c7cc91e8e0c915a48fc1bc0d0e30459f1d7",
+                "reference": "078e6c7cc91e8e0c915a48fc1bc0d0e30459f1d7",
                 "shasum": ""
             },
             "require": {
@@ -5206,10 +5209,10 @@
                 "docs": "https://developer.shopware.com",
                 "forum": "https://forum.shopware.com",
                 "issues": "https://github.com/shopware/shopware/issues",
-                "source": "https://github.com/shopware/core/tree/v6.6.10.2",
+                "source": "https://github.com/shopware/core/tree/v6.6.10.3",
                 "wiki": "https://developer.shopware.com"
             },
-            "time": "2025-03-04T14:16:03+00:00"
+            "time": "2025-03-31T07:08:30+00:00"
         },
         {
             "name": "smalot/pdfparser",
