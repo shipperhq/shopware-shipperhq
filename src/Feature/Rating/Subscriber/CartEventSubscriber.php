@@ -10,13 +10,12 @@
  * @author ShipperHQ Team sales@shipperhq.com
  */
 
-namespace SHQ\RateProvider\Subscriber;
+namespace SHQ\RateProvider\Feature\Rating\Subscriber;
 
 use Shopware\Core\Checkout\Cart\Event\CartChangedEvent;
-use Shopware\Core\Checkout\Cart\Event\LineItemAddedEvent;
-use Shopware\Core\Checkout\Cart\Event\LineItemQuantityChangedEvent;
+use Shopware\Core\Checkout\Cart\Event\BeforeLineItemAddedEvent;
+use Shopware\Core\Checkout\Cart\Event\BeforeLineItemQuantityChangedEvent;
 use Shopware\Core\Checkout\Cart\Event\LineItemRemovedEvent;
-use Shopware\Core\Checkout\Customer\Event\CustomerAddressChangedEvent;
 use SHQ\RateProvider\Service\ShippingRateCache;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
@@ -46,12 +45,13 @@ class CartEventSubscriber implements EventSubscriberInterface
         return [
             // Cart change events
             CartChangedEvent::class => 'onCartChanged',
-            LineItemAddedEvent::class => 'onLineItemAdded',
+            BeforeLineItemAddedEvent::class => 'onLineItemAdded',
             LineItemRemovedEvent::class => 'onLineItemRemoved',
-            LineItemQuantityChangedEvent::class => 'onLineItemQuantityChanged',
+            BeforeLineItemQuantityChangedEvent::class => 'onLineItemQuantityChanged',
             
             // Address change events
-            CustomerAddressChangedEvent::class => 'onCustomerAddressChanged',
+            // TODO: This doesn't exist, we need to find a way to listen to the address change event
+            // CustomerAddressChangedEvent::class => 'onCustomerAddressChanged',
         ];
     }
 

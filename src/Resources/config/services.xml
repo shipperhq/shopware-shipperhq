@@ -5,6 +5,8 @@
 
     <imports>
         <import resource="../src/Feature/ConfigurationHandler/config/services.xml"/>
+        <import resource="../src/Feature/ProductData/config/services.xml"/>
+        <import resource="../src/Feature/Rating/config/services.xml"/>
     </imports>
 
     <services>
@@ -84,11 +86,6 @@
         </service>
         -->
 
-        <service id="SHQ\RateProvider\Subscriber\CartEventSubscriber">
-            <argument type="service" id="SHQ\RateProvider\Service\ShippingRateCache"/>
-            <tag name="kernel.event_subscriber"/>
-        </service>
-
         <service id="SHQ\RateProvider\Core\Checkout\Cart\Delivery\DeliveryCalculatorDecorator" decorates="Shopware\Core\Checkout\Cart\Delivery\DeliveryCalculator" public="true">
             <argument type="service" id="Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator"/>
             <argument type="service" id="logger"/>
@@ -101,11 +98,6 @@
             <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
             <argument type="service" id="logger"/>
             <argument type="service" id="product.repository"/>
-        </service>
-
-        <service id="SHQ\RateProvider\Subscriber\ShippingMethodLoggerSubscriber">
-            <argument type="service" id="logger"/>
-            <tag name="kernel.event_subscriber"/>
         </service>
 
         <service id="SHQ\RateProvider\Command\ClearShippingRateCacheCommand">

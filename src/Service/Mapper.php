@@ -1,6 +1,6 @@
 <?php
 
-namespace ShipperHQ\Service;
+namespace SHQ\RateProvider\Service;
 
 use Psr\Log\LoggerInterface;
 use ShipperHQ\WS\Rate\Response\RateResponse;

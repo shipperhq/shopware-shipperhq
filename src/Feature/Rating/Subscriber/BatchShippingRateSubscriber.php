@@ -34,7 +34,7 @@ use Shopware\Core\Checkout\Cart\Event\CartBeforeSerializationEvent;
 use Shopware\Core\Checkout\Cart\Event\CartChangedEvent;
 use Shopware\Core\Checkout\Cart\Event\CartVerifyPersistEvent;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
-
+    
 class BatchShippingRateSubscriber implements EventSubscriberInterface
 {
     private ShippingRateCache $rateCache;

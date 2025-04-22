@@ -1,10 +1,8 @@
 <?php declare(strict_types=1);
 
-namespace SHQ\RateProvider\Subscriber;
+namespace SHQ\RateProvider\Feature\Rating\Subscriber;
 
 use Psr\Log\LoggerInterface;
-use Shopware\Core\Checkout\Cart\Delivery\Struct\Delivery;
-use Shopware\Core\Checkout\Cart\Delivery\Struct\DeliveryCollection;
 use Shopware\Core\Checkout\Cart\Event\CartChangedEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 

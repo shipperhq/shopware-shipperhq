@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace SHQ\RateProvider\Service;
+namespace SHQ\RateProvider\Feature\ProductData\Service;
 
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
@@ -27,7 +27,7 @@ class CustomFieldService
 
         // Create product custom field set if it doesn't exist
         if (!$existingProductSet) {
-            $this->customFieldSetRepository->create([
+            $this->customFieldSetRepository->upsert([
                 [
                     'name' => 'shipperhq_product',
                     'config' => [
@@ -106,57 +106,6 @@ class CustomFieldService
                                 'customFieldPosition' => 4
                             ]
                         ],
-                        [
-                            'name' => 'ship_length',
-                            'type' => CustomFieldTypes::FLOAT,
-                            'config' => [
-                                'label' => [
-                                    'en-GB' => 'Shipping Length',
-                                    'de-DE' => 'Versandlänge',
-                                    Defaults::LANGUAGE_SYSTEM => 'Shipping Length'
-                                ],
-                                'helpText' => [
-                                    'en-GB' => 'Length of the product for shipping',
-                                    'de-DE' => 'Länge des Produkts für den Versand',
-                                    Defaults::LANGUAGE_SYSTEM => 'Length of the product for shipping'
-                                ],
-                                'customFieldPosition' => 5
-                            ]
-                        ],
-                        [
-                            'name' => 'ship_width',
-                            'type' => CustomFieldTypes::FLOAT,
-                            'config' => [
-                                'label' => [
-                                    'en-GB' => 'Shipping Width',
-                                    'de-DE' => 'Versandbreite',
-                                    Defaults::LANGUAGE_SYSTEM => 'Shipping Width'
-                                ],
-                                'helpText' => [
-                                    'en-GB' => 'Width of the product for shipping',
-                                    'de-DE' => 'Breite des Produkts für den Versand',
-                                    Defaults::LANGUAGE_SYSTEM => 'Width of the product for shipping'
-                                ],
-                                'customFieldPosition' => 6
-                            ]
-                        ],
-                        [
-                            'name' => 'ship_height',
-                            'type' => CustomFieldTypes::FLOAT,
-                            'config' => [
-                                'label' => [
-                                    'en-GB' => 'Shipping Height',
-                                    'de-DE' => 'Versandhöhe',
-                                    Defaults::LANGUAGE_SYSTEM => 'Shipping Height'
-                                ],
-                                'helpText' => [
-                                    'en-GB' => 'Height of the product for shipping',
-                                    'de-DE' => 'Höhe des Produkts für den Versand',
-                                    Defaults::LANGUAGE_SYSTEM => 'Height of the product for shipping'
-                                ],
-                                'customFieldPosition' => 7
-                            ]
-                        ]
                     ],
                     'relations' => [
                         ['entityName' => 'product']
@@ -165,4 +114,4 @@ class CustomFieldService
             ], $context);
         }
     }
-} 
+}

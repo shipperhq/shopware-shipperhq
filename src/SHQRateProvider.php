@@ -16,10 +16,9 @@ use Shopware\Core\Framework\Plugin;
 use Shopware\Core\Framework\Plugin\Context\InstallContext;
 use Shopware\Core\Framework\Plugin\Context\UninstallContext;
 use Shopware\Core\Framework\Plugin\Context\UpdateContext;
-use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Doctrine\DBAL\Connection;
 use SHQ\RateProvider\Handlers\DatabaseHandler;
-use SHQ\RateProvider\Service\CustomFieldService;
+use SHQ\RateProvider\Feature\ProductData\Service\CustomFieldService;
 use Shopware\Core\Framework\Context;
 
 class SHQRateProvider extends Plugin
@@ -48,7 +47,6 @@ class SHQRateProvider extends Plugin
 
         $this->createCustomFields($updateContext->getContext());
     }
-    
 
     public function uninstall(UninstallContext $uninstallContext): void
     {
