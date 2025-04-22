@@ -15,9 +15,12 @@ namespace SHQ\RateProvider;
 use Shopware\Core\Framework\Plugin;
 use Shopware\Core\Framework\Plugin\Context\InstallContext;
 use Shopware\Core\Framework\Plugin\Context\UninstallContext;
+use Shopware\Core\Framework\Plugin\Context\UpdateContext;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Doctrine\DBAL\Connection;
 use SHQ\RateProvider\Handlers\DatabaseHandler;
+use SHQ\RateProvider\Service\CustomFieldService;
+use Shopware\Core\Framework\Context;
 
 class SHQRateProvider extends Plugin
 {
@@ -35,7 +38,17 @@ class SHQRateProvider extends Plugin
     public function install(InstallContext $installContext): void
     {
         parent::install($installContext);
+
+        $this->createCustomFields($installContext->getContext());
     }
+
+    public function update(UpdateContext $updateContext): void
+    {
+        parent::update($updateContext);
+
+        $this->createCustomFields($updateContext->getContext());
+    }
+    
 
     public function uninstall(UninstallContext $uninstallContext): void
     {
@@ -55,5 +68,13 @@ class SHQRateProvider extends Plugin
         $connection = $this->container->get(Connection::class);
         $databaseHandler = new DatabaseHandler($connection);
         $databaseHandler->removeShipperHQTables();
+    }
+
+    private function createCustomFields(Context $context): void
+    {
+        $customFieldService = new CustomFieldService(
+            customFieldSetRepository: $this->container->get('custom_field_set.repository')
+        );
+        $customFieldService->createCustomFieldSets($context);
     }
 }
