@@ -3,6 +3,10 @@
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
 
+    <imports>
+        <import resource="../src/Feature/ConfigurationHandler/config/services.xml"/>
+    </imports>
+
     <services>
         <service id="ShipperHQ\WS\Client\WebServiceClient" class="ShipperHQ\WS\Client\WebServiceClient" public="true">
             <tag name="shopware.service"/>
@@ -52,19 +56,6 @@
             <tag name="shopware.cart.collector" priority="4500" />
         </service>
         -->
-
-        <service id="SHQ\RateProvider\Handlers\ShipperHQHandler">
-            <argument type="service" id="logger"/>
-            <argument type="service" id="SHQ\RateProvider\Service\ShipperHQApiClient"/>
-            <argument type="service" id="shipping_method.repository"/>
-            <argument type="service" id="service_container"/>
-        </service>
-
-        <service id="SHQ\RateProvider\Controller\Api\ApiConnectorController" public="true">
-            <argument type="service" id="logger"/>
-            <argument type="service" id="SHQ\RateProvider\Handlers\ShipperHQHandler"/>
-            <tag name="controller.service_arguments"/>
-        </service>
 
         <service id="SHQ\RateProvider\Service\ShipperHQBatchRateProvider">
             <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>

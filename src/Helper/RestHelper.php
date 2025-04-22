@@ -16,8 +16,8 @@ use Shopware\Core\System\SystemConfig\SystemConfigService;
 
 class RestHelper
 {
-    private const TEST_URL = 'http://www.localhost.com:8087/shipperhq-ws/v1/';
-    private const LIVE_URL = 'http://api.shipperhq.com/v1/';
+    private const TEST_URL = 'http://localhost:8080/shipperhq-ws/v1/';
+    private const LIVE_URL = 'http://localhost:8080/shipperhq-ws/v1/';
 
     private SystemConfigService $systemConfig;
 
