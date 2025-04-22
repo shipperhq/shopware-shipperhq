@@ -1,20 +1,10 @@
 <?php declare(strict_types=1);
 
-/**
- * Shipper HQ
- *
- * @category ShipperHQ
- * @package shopware-shipperhq
- * @copyright Copyright (c) 2025 Zowta LTD and Zowta LLC (http://www.ShipperHQ.com)
- * @license ShipperHQ 2025
- * @author ShipperHQ Team sales@shipperhq.com
- */
-
-namespace SHQ\RateProvider\Helper;
+namespace SHQ\RateProvider\Config;
 
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 
-class RestHelper
+class ShipperHQClientConfig
 {
     private const TEST_URL = 'http://localhost:8080/shipperhq-ws/v1/';
     private const LIVE_URL = 'http://localhost:8080/shipperhq-ws/v1/';
@@ -26,27 +16,27 @@ class RestHelper
         $this->systemConfig = $systemConfig;
     }
 
-    protected function getGatewayUrl(): string
+    public function getGatewayUrl(): string
     {
-        return $this->getDeveloperMode() ? self::TEST_URL : self::LIVE_URL;
+        return $this->isDeveloperMode() ? self::TEST_URL : self::LIVE_URL;
     }
 
-    private function getDeveloperMode(): bool
+    public function isDeveloperMode(): bool
     {
         return $this->systemConfig->get('SHQRateProvider.config.developerMode') ?? false;
     }
 
-    public function getAllowedMethodGatewayUrl(): string
+    public function getAllowedMethodsUrl(): string
     {
         return $this->getGatewayUrl() . 'allowed_methods';
     }
 
-    public function getRateGatewayUrl(): string
+    public function getRatesUrl(): string
     {
         return $this->getGatewayUrl() . 'rates';
     }
 
-    public function getAttributeGatewayUrl(): string
+    public function getAttributesUrl(): string
     {
         return $this->getGatewayUrl() . 'attributes/get';
     }
@@ -55,4 +45,14 @@ class RestHelper
     {
         return $this->getGatewayUrl() . 'attributes/check';
     }
-} 
+
+    public function getApiKey(): ?string
+    {
+        return $this->systemConfig->get('SHQRateProvider.config.apiKey');
+    }
+
+    public function getAuthenticationCode(): ?string
+    {
+        return $this->systemConfig->get('SHQRateProvider.config.authenticationCode');
+    }
+}

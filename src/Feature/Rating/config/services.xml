@@ -15,6 +15,13 @@
             <tag name="kernel.event_subscriber"/>
         </service>
 
+        <service id="SHQ\RateProvider\Feature\Rating\Decorator\DeliveryCalculatorDecorator" decorates="Shopware\Core\Checkout\Cart\Delivery\DeliveryCalculator" public="true">
+            <argument type="service" id="Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator"/>
+            <argument type="service" id="logger"/>
+            <argument type="service" id="SHQ\RateProvider\Service\ShippingRateCache"/>
+            <argument type="service" id="shipping_method.repository"/>
+            <tag name="shopware.service"/>
+        </service>
     </services>
 </container>
  

@@ -13,97 +13,71 @@
 namespace SHQ\RateProvider\Service;
 
 use Psr\Log\LoggerInterface;
-use Shopware\Core\System\SystemConfig\SystemConfigService;
-use SHQ\RateProvider\Helper\RestHelper;
+use SHQ\RateProvider\Config\ShipperHQClientConfig;
 use ShipperHQ\WS\Client\WebServiceClient;
 use ShipperHQ\WS\Rate\Request\RateRequest;
 use ShipperHQ\WS\AllowedMethods\AllowedMethodsRequest;
 use ShipperHQ\WS\Shared\Credentials;
 use ShipperHQ\WS\Shared\SiteDetails;
-use ShipperHQ\WS\Shared\WebServiceRequestInterface;
+use ShipperHQ\WS\WebServiceRequestInterface;
+use SHQ\RateProvider\Helper\Mapper;
+use ShipperHQ\Lib\Rate\Helper;
+use ShipperHQ\WS\Rate\Response\RateResponse;
+
 /**
  * This class is used to interact with the ShipperHQ API
  * 
  * @author Jo Baker
  * @package SHQ\RateProvider\Service
  */
-class ShipperHQApiClient
+class ShipperHQClient
 {
-    private SystemConfigService $systemConfig;
-    private LoggerInterface $logger;
-    private RestHelper $restHelper;
-    private WebServiceClient $client;
-    private \ShipperHQ\Lib\Rate\Helper $shipperHQHelper;
-    private \SHQ\RateProvider\Helper\Mapper $mapper;
-
     public function __construct(
-        SystemConfigService $systemConfig,
-        LoggerInterface $logger,
-        RestHelper $restHelper,
-        WebServiceClient $client,
-        \ShipperHQ\Lib\Rate\Helper $shipperHQHelper,
-        \SHQ\RateProvider\Helper\Mapper $mapper
-    ) {
-        $this->systemConfig = $systemConfig;
-        $this->logger = $logger;
-        $this->restHelper = $restHelper;
-        $this->client = $client;
-        $this->shipperHQHelper = $shipperHQHelper;
-        $this->mapper = $mapper;
-    }
+        private ShipperHQClientConfig $config,
+        private LoggerInterface $logger,
+        private WebServiceClient $client,
+        private Helper $shipperHQHelper,
+        private Mapper $mapper
+    ) {}
 
     public function getAllowedMethods(): array
     {        
-        // Create rate request
         $request = new AllowedMethodsRequest();
         $request->setCredentials($this->buildCredentials());
         $request->setSiteDetails($this->buildSiteDetails());
         
-        $result = $this->sendRequest($request, $this->restHelper->getAllowedMethodGatewayUrl());
+        $result = $this->sendRequest($request, $this->config->getAllowedMethodsUrl());
 
         $resultData = [];
         if (is_object($result['debug'])) {
             $resultData = json_decode(json_encode($result), true);
             $this->logger->error($resultData);
         }
-        
 
         if (!isset($result['result'])) {
-
             $this->logger->error('ShipperHQ API Error: No result returned');
-            return null; // TODO Tidy this up
+            return [];
         } else {
             $this->logger->info('SHIPPERHQ: Response from getAllowedMethods call', ['result' => $result['result']]);
-
         }
 
         $allowedShippingMethods = [];
-
         $shipper_response = $this->shipperHQHelper->object_to_array($result);
-
         $this->logger->info('SHIPPERHQ: Formatted Response', ['shipper_response' => $shipper_response]);
 
-
-        // Check if we have carrier methods in the response
         if (isset($shipper_response['result']) && 
             isset($shipper_response['result']['carrierMethods']) && 
             is_array($shipper_response['result']['carrierMethods'])) {
-
-            //$this->logger->info('SHIPPERHQ: Carrier methods', ['carrierMethods' => $shipper_response['result']['carrierMethods']]);
-            // Loop through each carrier
             foreach ($shipper_response['result']['carrierMethods'] as $carrier) {
                 $carrierCode = $carrier['carrierCode'];
                 $carrierTitle = $carrier['title'];
                 
-                // Loop through each method for this carrier
                 if (isset($carrier['methods']) && is_array($carrier['methods'])) {
                     foreach ($carrier['methods'] as $method) {
-                        // Skip if methodCode is not set
                         if (!isset($method['methodCode'])) {
                             continue;
                         }
                         
-                        // Add to our allowed methods array
                         $allowedShippingMethods[] = [
                             'carrierCode' => $carrierCode,
                             'carrierTitle' => $carrierTitle,
@@ -116,18 +90,14 @@ class ShipperHQApiClient
         }
 
         $this->logger->debug('SHIPPERHQ: Allowed shipping methods', ['allowedShippingMethods' => $allowedShippingMethods]);
-
         return $allowedShippingMethods;
     }
-
-
 
     private function buildCredentials(): Credentials
     {
         $credentials = new Credentials();
-        $credentials->apiKey = $this->systemConfig->get('SHQRateProvider.config.apiKey');
-        $credentials->password = $this->systemConfig->get('SHQRateProvider.config.authenticationCode');
-
+        $credentials->apiKey = $this->config->getApiKey();
+        $credentials->password = $this->config->getAuthenticationCode();
         return $credentials;
     }
 
@@ -139,9 +109,6 @@ class ShipperHQApiClient
         $siteDetails->environmentScope = "LIVE";  // Only supporting LIVE for now
         return $siteDetails;
     }
-
-   
-
 
     /**
      * TODO Is this required?
@@ -159,13 +126,11 @@ class ShipperHQApiClient
        // return $result;
     }
 
-
-
     /**
      * Entry point for getting rates for all methods in a single API call
      * 3/11/2025
      */
-    public function getRatesForAllMethods(RateRequest $request): ?\ShipperHQ\WS\Rate\Response\RateResponse
+    public function getRatesForAllMethods(RateRequest $request): ?RateResponse
     {
         try {
             // Add credentials and site details if not already set
@@ -177,10 +142,8 @@ class ShipperHQApiClient
                 $request->setSiteDetails($this->buildSiteDetails());
             }
 
-            // Send the request to ShipperHQ
-            $result = $this->sendRequest($request, $this->restHelper->getRateGatewayUrl());
+            $result = $this->sendRequest($request, $this->config->getRatesUrl());
             
-            // Log the full response for debugging
             $this->logger->debug('SHIPPERHQ: Full API response', [
                 'response' => $result
             ]);
@@ -225,10 +188,7 @@ class ShipperHQApiClient
         } 
     }
 
-
-
-
-     /**
+    /**
      * Sends a request to the ShipperHQ API
      * 
      * @param WebServiceRequestInterface $request The request to send
@@ -242,7 +202,7 @@ class ShipperHQApiClient
         
         $result = $this->client->sendAndReceive(
             $request, 
-            $url ?? $this->restHelper->getRateGatewayUrl(),
+            $url ?? $this->config->getRatesUrl(),
             $timeout
         );
         
@@ -256,10 +216,4 @@ class ShipperHQApiClient
 
         return $result;
     }
-
-
-  
-
-   
-    
 } 

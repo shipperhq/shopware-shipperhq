@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace SHQ\RateProvider\Core\Checkout\Cart\Delivery;
+namespace SHQ\RateProvider\Feature\Rating\Decorator;
 
 use Shopware\Core\Checkout\Cart\Cart;
 use Shopware\Core\Checkout\Cart\Delivery\Struct\DeliveryPositionCollection;

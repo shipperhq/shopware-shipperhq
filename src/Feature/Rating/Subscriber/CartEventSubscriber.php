@@ -42,16 +42,13 @@ class CartEventSubscriber implements EventSubscriberInterface
 
     public static function getSubscribedEvents(): array
     {
+        // Address change events are already handled by shopware
         return [
             // Cart change events
             CartChangedEvent::class => 'onCartChanged',
             BeforeLineItemAddedEvent::class => 'onLineItemAdded',
             LineItemRemovedEvent::class => 'onLineItemRemoved',
-            BeforeLineItemQuantityChangedEvent::class => 'onLineItemQuantityChanged',
-            
-            // Address change events
-            // TODO: This doesn't exist, we need to find a way to listen to the address change event
-            // CustomerAddressChangedEvent::class => 'onCustomerAddressChanged',
+            BeforeLineItemQuantityChangedEvent::class => 'onLineItemQuantityChanged',  
         ];
     }
 

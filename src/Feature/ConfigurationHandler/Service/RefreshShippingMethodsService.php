@@ -6,7 +6,7 @@ use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\Uuid\Uuid;
 use Psr\Log\LoggerInterface;
-use SHQ\RateProvider\Service\ShipperHQApiClient;
+use SHQ\RateProvider\Service\ShipperHQClient;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -17,7 +17,7 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
 {
     public function __construct(
         private LoggerInterface $logger,
-        private ShipperHQApiClient $apiClient,
+        private ShipperHQClient $apiClient,
         private EntityRepository $shippingMethodRepository,
         private ContainerInterface $container
     ) {}

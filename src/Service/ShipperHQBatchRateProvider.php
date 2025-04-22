@@ -25,25 +25,13 @@ use SHQ\RateProvider\Helper\Mapper;
 
 class ShipperHQBatchRateProvider
 {
-    private SystemConfigService $systemConfig;
-    private LoggerInterface $logger;
-    private ShipperHQApiClient $apiClient;
-    private EntityRepository $shippingMethodRepository;
-    private Mapper $mapper;
-
     public function __construct(
-        SystemConfigService $systemConfig,
-        LoggerInterface $logger,
-        ShipperHQApiClient $apiClient,
-        EntityRepository $shippingMethodRepository,
-        Mapper $mapper
-    ) {
-        $this->systemConfig = $systemConfig;
-        $this->logger = $logger;
-        $this->apiClient = $apiClient;
-        $this->shippingMethodRepository = $shippingMethodRepository;
-        $this->mapper = $mapper;
-    }
+        private SystemConfigService $systemConfig,
+        private LoggerInterface $logger,
+        private ShipperHQClient $apiClient,
+        private EntityRepository $shippingMethodRepository,
+        private Mapper $mapper
+    ) {}
 
     /**
      * Fetch rates for all shipping methods in a single API call
