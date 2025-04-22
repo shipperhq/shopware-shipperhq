@@ -3,7 +3,12 @@
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
 
+    <imports>
+        <import resource="../src/Feature/ConfigurationHandler/config/services.xml"/>
+    </imports>
+
     <services>
+
         <service id="ShipperHQ\WS\Client\WebServiceClient" class="ShipperHQ\WS\Client\WebServiceClient" public="true">
             <tag name="shopware.service"/>
         </service>
@@ -22,15 +27,6 @@
             <argument type="service" id="logger"/>
         </service>
 
-        <!-- Commenting out ShippingRateSubscriber as it appears to be redundant with BatchShippingRateSubscriber -->
-        <!--
-        <service id="SHQ\RateProvider\Subscriber\ShippingRateSubscriber">
-            <tag name="kernel.event_subscriber"/>
-            <argument type="service" id="SHQ\RateProvider\Service\ShippingRateCalculator"/>
-            <argument type="service" id="logger"/>
-        </service>
-        -->
-
         <service id="SHQ\RateProvider\Helper\RestHelper">
             <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
         </service>
@@ -42,28 +38,6 @@
             <argument type="service" id="ShipperHQ\WS\Client\WebServiceClient"/>
             <argument type="service" id="ShipperHQ\Lib\Rate\Helper"/>
             <argument type="service" id="SHQ\RateProvider\Helper\Mapper"/>
-        </service>
-
-        <!-- Commenting out OverwritePriceCollector as it appears to be unnecessary -->
-        <!--
-        <service id="SHQ\RateProvider\Checkout\Cart\OverwritePriceCollector"> 
-            <argument type="service" id="Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator"/>
-            <tag name="shopware.cart.processor" priority="4500" />
-            <tag name="shopware.cart.collector" priority="4500" />
-        </service>
-        -->
-
-        <service id="SHQ\RateProvider\Handlers\ShipperHQHandler">
-            <argument type="service" id="logger"/>
-            <argument type="service" id="SHQ\RateProvider\Service\ShipperHQApiClient"/>
-            <argument type="service" id="shipping_method.repository"/>
-            <argument type="service" id="service_container"/>
-        </service>
-
-        <service id="SHQ\RateProvider\Controller\Api\ApiConnectorController" public="true">
-            <argument type="service" id="logger"/>
-            <argument type="service" id="SHQ\RateProvider\Handlers\ShipperHQHandler"/>
-            <tag name="controller.service_arguments"/>
         </service>
 
         <service id="SHQ\RateProvider\Service\ShipperHQBatchRateProvider">
@@ -81,29 +55,9 @@
             <argument type="service" id="shipping_method.repository"/>
         </service>
 
-        <!-- Commented out as we're using DeliveryCalculatorDecorator instead -->
-        <!--
-        <service id="SHQ\RateProvider\Subscriber\BatchShippingRateSubscriber">
-            <argument type="service" id="SHQ\RateProvider\Service\ShippingRateCache"/>
-            <argument type="service" id="monolog.logger.shipperhq"/>
-            <argument type="service" id="shipping_method.repository"/>
-            <argument type="service" id="Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator"/>
-            <argument type="service" id="Shopware\Core\Checkout\Cart\Tax\PercentageTaxRuleBuilder"/>
-            <tag name="kernel.event_subscriber"/>
-        </service>
-        -->
-
         <service id="SHQ\RateProvider\Subscriber\CartEventSubscriber">
             <argument type="service" id="SHQ\RateProvider\Service\ShippingRateCache"/>
             <tag name="kernel.event_subscriber"/>
-        </service>
-
-        <service id="SHQ\RateProvider\Core\Checkout\Cart\Delivery\DeliveryCalculatorDecorator" decorates="Shopware\Core\Checkout\Cart\Delivery\DeliveryCalculator" public="true">
-            <argument type="service" id="Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator"/>
-            <argument type="service" id="logger"/>
-            <argument type="service" id="SHQ\RateProvider\Service\ShippingRateCache"/>
-            <argument type="service" id="shipping_method.repository"/>
-            <tag name="shopware.service"/>
         </service>
 
         <service id="SHQ\RateProvider\Helper\Mapper">
@@ -117,19 +71,19 @@
             <tag name="kernel.event_subscriber"/>
         </service>
 
+        <service id="SHQ\RateProvider\Core\Checkout\Cart\Delivery\DeliveryCalculatorDecorator" decorates="Shopware\Core\Checkout\Cart\Delivery\DeliveryCalculator" public="true">
+            <!-- <argument type="service" id=".inner"/> -->
+            <argument type="service" id="Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator"/>
+            <!-- <argument type="service" id="Shopware\Core\Checkout\Cart\Tax\PercentageTaxRuleBuilder"/> -->
+            <argument type="service" id="logger"/>
+            <argument type="service" id="SHQ\RateProvider\Service\ShippingRateCache"/>
+            <argument type="service" id="shipping_method.repository"/>
+            <tag name="shopware.service"/>
+        </service>
+
         <service id="SHQ\RateProvider\Command\ClearShippingRateCacheCommand">
             <argument type="service" id="SHQ\RateProvider\Service\ShippingRateCache"/>
             <tag name="console.command"/>
-        </service>
-
-        <!-- Register ShippingMethodRouteDecorator -->
-        <service id="SHQ\RateProvider\Core\Checkout\Shipping\SalesChannel\ShippingMethodRouteDecorator"
-                 decorates="Shopware\Core\Checkout\Shipping\SalesChannel\ShippingMethodRoute">
-            <argument type="service" id=".inner"/>
-            <argument type="service" id="Shopware\Core\Checkout\Cart\Delivery\DeliveryCalculator"/>
-            <argument type="service" id="logger"/>
-            <argument type="service" id="request_stack"/>
-            <argument type="service" id="Shopware\Core\Checkout\Cart\SalesChannel\CartService"/>
         </service>
     </services>
 </container>
