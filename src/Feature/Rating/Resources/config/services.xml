@@ -59,6 +59,7 @@
             <argument type="service" id="request_stack"/>
             <argument type="service" id="Shopware\Core\Checkout\Cart\SalesChannel\CartService"/>
             <argument type="service" id="SHQ\RateProvider\Feature\Rating\Service\ShippingRateCache"/>
+            <argument type="service" id="shipping_method.repository"/>
         </service>
     </services>
 </container>

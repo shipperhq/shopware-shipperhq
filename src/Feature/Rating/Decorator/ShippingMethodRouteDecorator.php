@@ -161,12 +161,14 @@ class ShippingMethodRouteDecorator extends ShippingMethodRoute
         $removedCount = 0;
         $rates = $this->rateCache->getRates($cart, $context);
         foreach ($shippingMethods as $key => $shippingMethod) {
+            $rateExists = isset($rates[$shippingMethod->getId()]);
+            $customFields = $shippingMethod->getCustomFields();
+
             // Remove shipping methods that don't have a rate
             // Keep the non shipperhq shipping methods
-            if (!isset($rates[$shippingMethod->getId()]) 
-                    && $shippingMethod->getCustomFields() !== null
-                    && isset($shippingMethod->getCustomFields()['shipperhq_carrier_code'])
-                    && $shippingMethod->getCustomFields()['shipperhq_carrier_code'] !== null) {
+            if (!$rateExists && $customFields !== null
+                && isset($customFields['shipperhq_carrier_code'])
+                && $customFields['shipperhq_carrier_code'] !== null) {
                 $this->logger->info('SHIPPERHQ: Removing shipping method', [
                     'method_id' => $shippingMethod->getId(),
                     'method_name' => $shippingMethod->getName()

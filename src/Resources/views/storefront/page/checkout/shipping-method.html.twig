@@ -1,0 +1,10 @@
+{% sw_extends '@Storefront/storefront/page/checkout/shipping-method.html.twig' %}
+
+{% block page_checkout_shipping_method_input %}
+    {{ parent() }}
+    {% if shippingMethod.shippingCosts %}
+        <span class="shipping-cost">
+            {{ shippingMethod.shippingCosts.totalPrice|currency }}
+        </span>
+    {% endif %}
+{% endblock %}
