@@ -258,7 +258,7 @@ class ShipperHQRateProvider
 
                 // Process each shipping rate
                 foreach ($shippingRates as $rate) {
-                    if (!$rate->getMethodCode() || !$rate->getTotalPrice()) {
+                    if (!$rate->getMethodCode() || $rate->getTotalPrice() === null) {
                         $this->logger->warning('SHIPPERHQ: Rate missing required fields', [
                             'rate' => json_encode($rate)
                         ]);
