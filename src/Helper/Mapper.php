@@ -581,7 +581,7 @@ class Mapper
                         $shippingRateObject->setCarrierCode($shippingRate['carrierCode'] ?? '');
                         $shippingRateObject->setMethodCode($shippingRate['code'] ?? '');
                         $shippingRateObject->setMethodTitle($shippingRate['name'] ?? '');
-                        $shippingRateObject->setTotalPrice($shippingRate['shippingPrice'] ?? 0.0);
+                        $shippingRateObject->setTotalPrice($shippingRate['totalCharges'] ?? 0.0);
                         $shippingRateObject->setCurrencyCode($shippingRate['currency'] ?? '');
                         $shippingRateObject->setAttributes($shippingRate['attributes'] ?? []);
                         $shippingRateObjects[] = $shippingRateObject;
