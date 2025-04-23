@@ -33,4 +33,4 @@ class ShippingMethodLoggerSubscriber implements EventSubscriberInterface
             ]);
         }
     }
-} 
+}

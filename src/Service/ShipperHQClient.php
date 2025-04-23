@@ -111,22 +111,6 @@ class ShipperHQClient
     }
 
     /**
-     * TODO Is this required?
-     */
-    public function getRates(array $context): array
-    {
-        $this->logger->info('SHIPPERHQ: Inside ApiClient getRates');
-        // $request = $this->buildRatesRequest($context);
-        // $result = $this->sendRequest($request);
-        
-      //  if (!$result) {
-            return [];
-      //  }
-        
-       // return $result;
-    }
-
-    /**
      * Entry point for getting rates for all methods in a single API call
      * 3/11/2025
      */

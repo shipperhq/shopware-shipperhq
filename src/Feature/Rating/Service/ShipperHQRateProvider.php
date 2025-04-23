@@ -1,16 +1,6 @@
 <?php declare(strict_types=1);
 
-/**
- * Shipper HQ
- *
- * @category ShipperHQ
- * @package shopware-shipperhq
- * @copyright Copyright (c) 2025 Zowta LTD and Zowta LLC (http://www.ShipperHQ.com)
- * @license ShipperHQ 2025
- * @author ShipperHQ Team sales@shipperhq.com
- */
-
-namespace SHQ\RateProvider\Service;
+namespace SHQ\RateProvider\Feature\Rating\Service;
 
 use Psr\Log\LoggerInterface;
 use Shopware\Core\Checkout\Cart\Cart;
@@ -22,15 +12,16 @@ use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 use SHQ\RateProvider\Helper\Mapper;
+use SHQ\RateProvider\Service\ShipperHQClient;
 
-class ShipperHQBatchRateProvider
+class ShipperHQRateProvider
 {
     public function __construct(
-        private SystemConfigService $systemConfig,
-        private LoggerInterface $logger,
-        private ShipperHQClient $apiClient,
-        private EntityRepository $shippingMethodRepository,
-        private Mapper $mapper
+        private readonly SystemConfigService $systemConfig,
+        private readonly LoggerInterface $logger,
+        private readonly ShipperHQClient $apiClient,
+        private readonly EntityRepository $shippingMethodRepository,
+        private readonly Mapper $mapper
     ) {}
 
     /**
@@ -107,10 +98,6 @@ class ShipperHQBatchRateProvider
 
         // Use the mapper to create a properly formatted request
         $request = $this->mapper->createRequest($cart, $context);
-        
-        // TODO Do we need this?
-    //    $requestArray = json_decode(json_encode($request), true);
-
         
         return $request;
     }

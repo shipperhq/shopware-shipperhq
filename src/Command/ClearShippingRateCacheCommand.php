@@ -2,7 +2,7 @@
 
 namespace SHQ\RateProvider\Command;
 
-use SHQ\RateProvider\Service\ShippingRateCache;
+use SHQ\RateProvider\Feature\Rating\Service\ShippingRateCache;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -38,4 +38,4 @@ class ClearShippingRateCacheCommand extends Command
             return Command::FAILURE;
         }
     }
-} 
+}

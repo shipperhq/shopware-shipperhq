@@ -15,12 +15,40 @@ use SHQ\RateProvider\Feature\ConfigurationHandler\Service\RefreshShippingMethods
 
 class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInterface
 {
+    private ?string $shipperhqTagId = null;
+
     public function __construct(
         private LoggerInterface $logger,
         private ShipperHQClient $apiClient,
         private EntityRepository $shippingMethodRepository,
-        private ContainerInterface $container
+        private EntityRepository $tagRepository,
+        private EntityRepository $deliveryTimeRepository,
+        private EntityRepository $ruleRepository,
+        private EntityRepository $salesChannelRepository
     ) {}
+
+    private function getShipperHQTagId(Context $context): string
+    {
+        if ($this->shipperhqTagId !== null) {
+            return $this->shipperhqTagId;
+        }
+
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('name', 'shipperhq_managed'));
+        
+        $tagId = $this->tagRepository->searchIds($criteria, $context)->firstId();
+        
+        if ($tagId === null) {
+            $tagId = Uuid::randomHex();
+            $this->tagRepository->create([[
+                'id' => $tagId,
+                'name' => 'shipperhq_managed'
+            ]], $context);
+        }
+        
+        $this->shipperhqTagId = $tagId;
+        return $tagId;
+    }
 
     public function getAllowedMethods(): array
     {
@@ -49,6 +77,7 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
         $deliveryTimeId = $this->getDeliveryTimeId($context);
         $salesChannelIds = $this->getActiveSalesChannelIds($context);
         $availabilityRuleId = $this->getAvailabilityRuleId($context);
+        $tagId = $this->getShipperHQTagId($context);
         
         $data = [
             'id' => $id,
@@ -63,6 +92,9 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
                 'shipperhq_method_name' => $newAllowedMethod['methodName'] ?? '',
                 'shipperhq_carrier_code' => $newAllowedMethod['carrierCode'] ?? '',
                 'shipperhq_carrier_title' => $newAllowedMethod['carrierTitle'] ?? ''
+            ],
+            'tags' => [
+                ['id' => $tagId]
             ],
             'availabilityRuleId' => $availabilityRuleId,
             'salesChannels' => $salesChannelIds
@@ -91,6 +123,7 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
         $deliveryTimeId = $this->getDeliveryTimeId($context);
         $salesChannelIds = $this->getActiveSalesChannelIds($context);
         $availabilityRuleId = $this->getAvailabilityRuleId($context);
+        $tagId = $this->getShipperHQTagId($context);
         
         $data = [
             'id' => $id,
@@ -104,6 +137,9 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
                 'shipperhq_method_name' => $newAllowedMethod['methodName'] ?? '',
                 'shipperhq_carrier_code' => $newAllowedMethod['carrierCode'] ?? '',
                 'shipperhq_carrier_title' => $newAllowedMethod['carrierTitle'] ?? ''
+            ],
+            'tags' => [
+                ['id' => $tagId]
             ],
             'availabilityRuleId' => $availabilityRuleId,
             'salesChannels' => $salesChannelIds
@@ -148,8 +184,7 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
         $criteria->addFilter(new EqualsFilter('max', 0));
         $criteria->addFilter(new EqualsFilter('unit', DeliveryTimeEntity::DELIVERY_TIME_DAY));
         
-        $deliveryTimeRepository = $this->container->get('delivery_time.repository');
-        $deliveryTime = $deliveryTimeRepository->search($criteria, $context)->first();
+        $deliveryTime = $this->deliveryTimeRepository->search($criteria, $context)->first();
         
         if ($deliveryTime !== null) {
             return $deliveryTime->getId();
@@ -157,7 +192,7 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
         
         // If no delivery time found, create a default one
         $deliveryTimeId = Uuid::randomHex();
-        $deliveryTimeRepository->create([[
+        $this->deliveryTimeRepository->create([[
             'id' => $deliveryTimeId,
             'min' => 1,
             'max' => 3,
@@ -173,7 +208,7 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
         // Find the 'Cart >= 0' rule by name
         $ruleCriteria = new Criteria();
         $ruleCriteria->addFilter(new EqualsFilter('name', 'Cart >= 0'));
-        $ruleId = $this->container->get('rule.repository')->searchIds($ruleCriteria, $context)->firstId();
+        $ruleId = $this->ruleRepository->searchIds($ruleCriteria, $context)->firstId();
         
         if ($ruleId !== null) {
             return $ruleId;
@@ -182,7 +217,7 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
         // If not found, try to find any rule
         $ruleCriteria = new Criteria();
         $ruleCriteria->setLimit(1);
-        $ruleId = $this->container->get('rule.repository')->searchIds($ruleCriteria, $context)->firstId();
+        $ruleId = $this->ruleRepository->searchIds($ruleCriteria, $context)->firstId();
         
         if ($ruleId !== null) {
             return $ruleId;
@@ -204,7 +239,7 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
             'updatedAt' => new \DateTimeImmutable()
         ];
         
-        $this->container->get('rule.repository')->create([$ruleData], $context);
+        $this->ruleRepository->create([$ruleData], $context);
         
         return $ruleId;
     }
@@ -213,7 +248,7 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
     {
         $criteria = new Criteria();
         $criteria->addFilter(new EqualsFilter('active', true));
-        $salesChannels = $this->container->get('sales_channel.repository')->search($criteria, $context);
+        $salesChannels = $this->salesChannelRepository->search($criteria, $context);
         
         return array_map(function($salesChannel) {
             return ['id' => $salesChannel->getId()];

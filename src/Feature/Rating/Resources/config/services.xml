@@ -1,0 +1,56 @@
+<?xml version="1.0" ?>
+<container xmlns="http://symfony.com/schema/dic/services"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+
+    <services>
+        <!-- Feature-specific services -->
+        <service id="SHQ\RateProvider\Feature\Rating\Subscriber\CartEventSubscriber">
+            <argument type="service" id="SHQ\RateProvider\Feature\Rating\Service\ShippingRateCache"/>
+            <tag name="kernel.event_subscriber"/>
+        </service>
+
+        <service id="SHQ\RateProvider\Feature\Rating\Subscriber\ShippingMethodLoggerSubscriber">
+            <argument type="service" id="logger"/>
+            <tag name="kernel.event_subscriber"/>
+        </service>
+
+        <service id="SHQ\RateProvider\Feature\Rating\Decorator\DeliveryCalculatorDecorator" decorates="Shopware\Core\Checkout\Cart\Delivery\DeliveryCalculator">
+            <argument type="service" id="SHQ\RateProvider\Feature\Rating\Decorator\DeliveryCalculatorDecorator.inner"/>
+            <argument type="service" id="Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator"/>
+            <argument type="service" id="logger"/>
+            <argument type="service" id="SHQ\RateProvider\Feature\Rating\Service\ShippingRateCache"/>
+        </service>
+
+        <!-- Rate Cache Services -->
+        <service id="SHQ\RateProvider\Feature\Rating\Service\SessionRateStorage">
+            <argument type="service" id="session.factory"/>
+        </service>
+
+        <service id="SHQ\RateProvider\Feature\Rating\Service\RateCacheKeyGenerator">
+        </service>
+
+        <service id="SHQ\RateProvider\Feature\Rating\Service\RateMatcher">
+            <argument type="service" id="shipping_method.repository"/>
+            <argument type="service" id="monolog.logger"/>
+        </service>
+
+        <service id="SHQ\RateProvider\Feature\Rating\Service\ShipperHQRateProvider">
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+            <argument type="service" id="monolog.logger"/>
+            <argument type="service" id="SHQ\RateProvider\Service\ShipperHQClient"/>
+            <argument type="service" id="shipping_method.repository"/>
+            <argument type="service" id="SHQ\RateProvider\Helper\Mapper"/>
+        </service>
+
+        <service id="SHQ\RateProvider\Feature\Rating\Service\ShippingRateCache">
+            <argument type="service" id="SHQ\RateProvider\Feature\Rating\Service\SessionRateStorage"/>
+            <argument type="service" id="SHQ\RateProvider\Feature\Rating\Service\RateMatcher"/>
+            <argument type="service" id="SHQ\RateProvider\Feature\Rating\Service\RateCacheKeyGenerator"/>
+            <argument type="service" id="SHQ\RateProvider\Feature\Rating\Service\ShipperHQRateProvider"/>
+            <argument type="service" id="monolog.logger"/>
+        </service>
+
+    </services>
+</container>
+ 

@@ -4,9 +4,9 @@
            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
 
     <imports>
-        <import resource="../src/Feature/ConfigurationHandler/config/services.xml"/>
-        <import resource="../src/Feature/ProductData/config/services.xml"/>
-        <import resource="../src/Feature/Rating/config/services.xml"/>
+        <import resource="../src/Feature/ConfigurationHandler/Resources/config/services.xml"/>
+        <import resource="../src/Feature/ProductData/Resources/config/services.xml"/>
+        <import resource="../src/Feature/Rating/Resources/config/services.xml"/>
     </imports>
 
     <services>
@@ -49,25 +49,10 @@
         </service>
         -->
 
-        <service id="SHQ\RateProvider\Service\ShipperHQBatchRateProvider">
-            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
-            <argument type="service" id="logger"/>
-            <argument type="service" id="SHQ\RateProvider\Service\ShipperHQClient"/>
-            <argument type="service" id="shipping_method.repository"/>
-            <argument type="service" id="SHQ\RateProvider\Helper\Mapper"/>
-        </service>
-
-        <service id="SHQ\RateProvider\Service\ShippingRateCache">
-            <argument type="service" id="session.factory"/>
-            <argument type="service" id="logger"/>
-            <argument type="service" id="SHQ\RateProvider\Service\ShipperHQBatchRateProvider"/>
-            <argument type="service" id="shipping_method.repository"/>
-        </service>
-
         <!-- Commented out as we're using DeliveryCalculatorDecorator instead -->
         <!--
         <service id="SHQ\RateProvider\Subscriber\BatchShippingRateSubscriber">
-            <argument type="service" id="SHQ\RateProvider\Service\ShippingRateCache"/>
+            <argument type="service" id="SHQ\RateProvider\Feature\Rating\Service\ShippingRateCache"/>
             <argument type="service" id="monolog.logger.shipperhq"/>
             <argument type="service" id="shipping_method.repository"/>
             <argument type="service" id="Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator"/>
@@ -84,7 +69,7 @@
         </service>
 
         <service id="SHQ\RateProvider\Command\ClearShippingRateCacheCommand">
-            <argument type="service" id="SHQ\RateProvider\Service\ShippingRateCache"/>
+            <argument type="service" id="SHQ\RateProvider\Feature\Rating\Service\ShippingRateCache"/>
             <tag name="console.command"/>
         </service>
 
@@ -96,6 +81,7 @@
             <argument type="service" id="logger"/>
             <argument type="service" id="request_stack"/>
             <argument type="service" id="Shopware\Core\Checkout\Cart\SalesChannel\CartService"/>
+            <argument type="service" id="SHQ\RateProvider\Feature\Rating\Service\ShippingRateCache"/>
         </service>
     </services>
 </container>
