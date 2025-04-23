@@ -254,4 +254,4 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
             return ['id' => $salesChannel->getId()];
         }, $salesChannels->getElements());
     }
-} 
+}

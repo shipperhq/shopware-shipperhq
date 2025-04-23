@@ -28,13 +28,13 @@ class DeliveryCalculatorDecorator extends DeliveryCalculator
     public function calculate(CartDataCollection $data, Cart $cart, DeliveryCollection $deliveries, SalesChannelContext $context): void
     {
 
-        $this->parent->calculate($data, $cart, $deliveries, $context);
-
         foreach ($deliveries as $delivery) {
             if ($this->isShipperHQShippingMethod($delivery->getShippingMethod())) {
                 $this->calculateShipperHQDelivery($delivery, $cart, $context);
             }
         }
+
+        $this->parent->calculate($data, $cart, $deliveries, $context);
     }
 
     public function isShipperHQShippingMethod(ShippingMethodEntity $shippingMethod): bool
