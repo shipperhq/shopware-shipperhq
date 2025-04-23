@@ -181,5 +181,4 @@ class ShippingMethodRouteDecorator extends ShippingMethodRoute
             'removed_methods_count' => $removedCount
         ]);
     }
-    
 }
