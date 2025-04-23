@@ -1,12 +1,10 @@
 <?php declare(strict_types=1);
 
-namespace SHQ\RateProvider\Core\Checkout\Shipping\SalesChannel;
+namespace SHQ\RateProvider\Feature\Rating\Decorator;
 
 use Psr\Log\LoggerInterface;
 use Shopware\Core\Checkout\Cart\Delivery\DeliveryCalculator;
-use Shopware\Core\Checkout\Cart\Delivery\Struct\Delivery;
 use Shopware\Core\Checkout\Cart\LineItem\CartDataCollection;
-use Shopware\Core\Checkout\Cart\LineItem\LineItemCollection;
 use Shopware\Core\Checkout\Shipping\SalesChannel\ShippingMethodRoute;
 use Shopware\Core\Checkout\Shipping\SalesChannel\ShippingMethodRouteResponse;
 use Shopware\Core\Checkout\Shipping\ShippingMethodCollection;
@@ -18,8 +16,6 @@ use Symfony\Component\HttpFoundation\RequestStack;
 use Shopware\Core\Checkout\Cart\Cart;
 use Shopware\Core\Checkout\Cart\SalesChannel\CartService;
 use Shopware\Core\Checkout\Cart\Delivery\Struct\DeliveryCollection;
-use Shopware\Core\Framework\DataAbstractionLayer\Entity\Entity;
-use Shopware\Core\Checkout\Shipping\ShippingMethodEntity;
 
 class ShippingMethodRouteDecorator extends ShippingMethodRoute
 {
