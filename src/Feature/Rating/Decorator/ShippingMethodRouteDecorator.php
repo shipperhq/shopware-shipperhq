@@ -5,9 +5,11 @@ namespace SHQ\RateProvider\Feature\Rating\Decorator;
 use Psr\Log\LoggerInterface;
 use Shopware\Core\Checkout\Cart\Delivery\DeliveryCalculator;
 use Shopware\Core\Checkout\Cart\LineItem\CartDataCollection;
+use Shopware\Core\Checkout\Shipping\Aggregate\ShippingMethodPrice\ShippingMethodPriceCollection;
 use Shopware\Core\Checkout\Shipping\SalesChannel\ShippingMethodRoute;
 use Shopware\Core\Checkout\Shipping\SalesChannel\ShippingMethodRouteResponse;
 use Shopware\Core\Checkout\Shipping\ShippingMethodCollection;
+use Shopware\Core\Checkout\Shipping\ShippingMethodEntity;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use SHQ\RateProvider\Feature\Rating\Service\ShippingRateCache;
@@ -16,6 +18,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
 use Shopware\Core\Checkout\Cart\Cart;
 use Shopware\Core\Checkout\Cart\SalesChannel\CartService;
 use Shopware\Core\Checkout\Cart\Delivery\Struct\DeliveryCollection;
+use Shopware\Core\Framework\Uuid\Uuid;
 
 class ShippingMethodRouteDecorator extends ShippingMethodRoute
 {
@@ -84,16 +87,16 @@ class ShippingMethodRouteDecorator extends ShippingMethodRoute
     {
         $response = $this->decorated->load($request, $context, $criteria);
         $shippingMethods = $response->getShippingMethods();
-        
+
         $this->logShippingMethods($shippingMethods);
-        
+
         $cart = $this->getCart($context);
         if (!$cart) {
             return $response;
         }
-        
+
         $this->filterShippingMethods($cart, $context, $shippingMethods);
-        
+
         return $response;
     }
 
@@ -129,33 +132,6 @@ class ShippingMethodRouteDecorator extends ShippingMethodRoute
         }
     }
 
-    private function calculateDeliveries(Cart $cart, SalesChannelContext $context): DeliveryCollection
-    {
-        $data = new CartDataCollection();
-        $data->set('lineItems', $cart->getLineItems());
-        
-        $deliveries = new DeliveryCollection();
-        $this->deliveryCalculator->calculate($data, $cart, $deliveries, $context);
-        
-        $this->logDeliveries($deliveries);
-        
-        return $deliveries;
-    }
-
-    private function logDeliveries(DeliveryCollection $deliveries): void
-    {
-        $this->logger->info('SHIPPERHQ: Calculated deliveries', [
-            'deliveries_count' => $deliveries->count(),
-            'delivery_methods' => array_map(function($delivery) {
-                return [
-                    'method_id' => $delivery->getShippingMethod()->getId(),
-                    'method_name' => $delivery->getShippingMethod()->getName(),
-                    'shipping_costs' => $delivery->getShippingCosts()->getTotalPrice()
-                ];
-            }, $deliveries->getElements())
-        ]);
-    }
-
     private function filterShippingMethods(Cart $cart, SalesChannelContext $context, ShippingMethodCollection $shippingMethods): void
     {
         $removedCount = 0;
@@ -166,21 +142,32 @@ class ShippingMethodRouteDecorator extends ShippingMethodRoute
 
             // Remove shipping methods that don't have a rate
             // Keep the non shipperhq shipping methods
-            if (!$rateExists && $customFields !== null
-                && isset($customFields['shipperhq_carrier_code'])
-                && $customFields['shipperhq_carrier_code'] !== null) {
+            if (!$rateExists
+            // This will remove any non shipperhq shipping methods if commented out
+            //  && $this->isShipperHQShippingMethod($shippingMethod)
+             ) {
                 $this->logger->info('SHIPPERHQ: Removing shipping method', [
                     'method_id' => $shippingMethod->getId(),
                     'method_name' => $shippingMethod->getName()
                 ]);
                 $shippingMethods->remove($key);
                 $removedCount++;
+            } else {
+                $customFields = $shippingMethod->getCustomFields() ?? [];
+                $customFields['rate'] = $rates[$shippingMethod->getId()];
+                $shippingMethod->setCustomFields($customFields);
             }
         }
-        
+
         $this->logger->info('SHIPPERHQ: Filtered shipping methods', [
             'filtered_methods_count' => $shippingMethods->count(),
             'removed_methods_count' => $removedCount
         ]);
+    }
+
+    public function isShipperHQShippingMethod(ShippingMethodEntity $shippingMethod): bool
+    {
+        $customFields = $shippingMethod->getCustomFields();
+        return $customFields !== null && isset($customFields['shipperhq_carrier_code']) && $customFields['shipperhq_carrier_code'] !== null;
     }
 }

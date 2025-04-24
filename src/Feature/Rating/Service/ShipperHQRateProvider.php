@@ -278,13 +278,17 @@ class ShipperHQRateProvider
                     // Add the rate to the result array
                     $rates[$methodId] = [
                         'price' => $rate->getTotalPrice(),
-                        'currency' => $rate->getCurrencyCode() ?: 'USD'
+                        'currency' => $rate->getCurrencyCode() ?: 'USD',
+                        'dispatchDateStr' => $rate->getDispatchDateStr(),
+                        'deliveryDateStr' => $rate->getDeliveryDateStr()
                     ];
                     
                     $this->logger->debug('SHIPPERHQ: Added rate to result', [
                         'method_id' => $methodId,
                         'price' => $rate->getTotalPrice(),
-                        'currency' => $rate->getCurrencyCode() ?: 'USD'
+                        'currency' => $rate->getCurrencyCode() ?: 'USD',
+                        'dispatchDateStr' => $rate->getDispatchDateStr(),
+                        'deliveryDateStr' => $rate->getDeliveryDateStr()
                     ]);
                 }
             }

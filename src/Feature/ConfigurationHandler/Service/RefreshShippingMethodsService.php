@@ -83,7 +83,7 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
             'id' => $id,
             'name' => $carrierTitleMethodName ?? 'ShipperHQ Method',
             'active' => true,
-            'description' => $methodDescription ?? '',
+            'description' => '',
             'deliveryTimeId' => $deliveryTimeId,
             'technicalName' => $methodId,
             'customFields' => [
@@ -128,7 +128,7 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
         $data = [
             'id' => $id,
             'name' => $carrierTitleMethodName ?? 'ShipperHQ Method',
-            'description' => $methodDescription ?? '',
+            'description' => '',
             'deliveryTimeId' => $deliveryTimeId,
             'technicalName' => $methodId,
             'customFields' => [

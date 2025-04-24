@@ -1,0 +1,16 @@
+{% sw_extends '@Storefront/storefront/component/shipping/shipping-method.html.twig' %}
+
+{% block component_shipping_method_label %}
+    {{ parent() }}
+    <div class="shipping-method-description">
+        {% if shipping.customFields.rate %}
+            <div class="shipping-method-price">
+                {% if shipping.customFields.rate.price == 0 %}
+                    Free Shipping
+                {% else %}
+                    {{ shipping.customFields.rate.price|currency }}
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
