@@ -70,4 +70,4 @@ class Mapper
 
         return $rateResponse->toArray();
     }
-} 
+}
