@@ -7,6 +7,7 @@
         <import resource="../src/Feature/ConfigurationHandler/Resources/config/services.xml"/>
         <import resource="../src/Feature/ProductData/Resources/config/services.xml"/>
         <import resource="../src/Feature/Rating/Resources/config/services.xml"/>
+<!--        <import resource="../src/Feature/Order/Resources/config/services.xml"/>-->
     </imports>
 
     <services>

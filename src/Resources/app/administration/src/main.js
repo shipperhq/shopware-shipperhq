@@ -19,3 +19,4 @@ Shopware.Service().register('ShipperHQApiService', () => {
 // Import component
 import './component/shq-api-test-button';
 import './component/shq-api-refresh-methods-button';
+import './view/sw-order-detail-custom';

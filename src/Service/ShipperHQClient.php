@@ -149,7 +149,8 @@ class ShipperHQClient
             // Check if the result has the expected structure
             if (!isset($resultData['carrierGroups']) && !isset($resultData['mergedRateResponse'])) {
                 $this->logger->warning('SHIPPERHQ: Result does not have expected structure', [
-                    'result_keys' => array_keys($resultData)
+                    'result_type' => gettype($resultData),
+                    'result_keys' => is_array($resultData) ? array_keys($resultData) : 'Not an array'
                 ]);
             }
 
@@ -200,4 +201,4 @@ class ShipperHQClient
 
         return $result;
     }
-} 
+}

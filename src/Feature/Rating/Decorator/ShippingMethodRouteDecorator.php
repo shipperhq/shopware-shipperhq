@@ -154,7 +154,9 @@ class ShippingMethodRouteDecorator extends ShippingMethodRoute
                 $removedCount++;
             } else {
                 $customFields = $shippingMethod->getCustomFields() ?? [];
-                $customFields['rate'] = $rates[$shippingMethod->getId()];
+                $customFields['shipperhq_rate'] = $rates[$shippingMethod->getId()];
+                $customFields['shipperhq_delivery_date'] = $rates[$shippingMethod->getId()]['delivery_date'];
+                $customFields['shipperhq_dispatch_date'] = $rates[$shippingMethod->getId()]['dispatch_date'];
                 $shippingMethod->setCustomFields($customFields);
             }
         }
