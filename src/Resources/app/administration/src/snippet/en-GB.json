@@ -18,10 +18,12 @@
     "global": {
         "sw-order": {
             "delivery-date": {
-                "empty": "No delivery date available"
+                "empty": "No delivery date available",
+                "label": "Estimated Delivery Date"
             },
             "dispatch-date": {
-                "empty": "No dispatch date available"
+                "empty": "No dispatch date available",
+                "label": "Dispatch Date"
             }
         }
     }

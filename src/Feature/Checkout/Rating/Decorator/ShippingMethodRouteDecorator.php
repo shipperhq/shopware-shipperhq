@@ -19,6 +19,7 @@ use Shopware\Core\Checkout\Cart\Cart;
 use Shopware\Core\Checkout\Cart\SalesChannel\CartService;
 use Shopware\Core\Checkout\Cart\Delivery\Struct\DeliveryCollection;
 use Shopware\Core\Framework\Uuid\Uuid;
+use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 
 class ShippingMethodRouteDecorator extends ShippingMethodRoute
 {
@@ -30,7 +31,8 @@ class ShippingMethodRouteDecorator extends ShippingMethodRoute
         private readonly LoggerInterface $logger,
         private readonly RequestStack $requestStack,
         private readonly CartService $cartService,
-        private readonly ShippingRateCache $rateCache
+        private readonly ShippingRateCache $rateCache,
+        private readonly EntityRepository $shippingMethodRepository,
     ) {}
 
     public function getDecorated(): ShippingMethodRoute
@@ -136,16 +138,13 @@ class ShippingMethodRouteDecorator extends ShippingMethodRoute
     {
         $removedCount = 0;
         $rates = $this->rateCache->getRates($cart, $context);
+        $updates = [];
+
         foreach ($shippingMethods as $key => $shippingMethod) {
             $rateExists = isset($rates[$shippingMethod->getId()]);
             $customFields = $shippingMethod->getCustomFields();
 
-            // Remove shipping methods that don't have a rate
-            // Keep the non shipperhq shipping methods
-            if (!$rateExists
-            // This will remove any non shipperhq shipping methods if commented out
-            //  && $this->isShipperHQShippingMethod($shippingMethod)
-             ) {
+            if (!$rateExists) {
                 $this->logger->info('SHIPPERHQ: Removing shipping method', [
                     'method_id' => $shippingMethod->getId(),
                     'method_name' => $shippingMethod->getName()
@@ -158,12 +157,24 @@ class ShippingMethodRouteDecorator extends ShippingMethodRoute
                 $customFields['shipperhq_delivery_date'] = $rates[$shippingMethod->getId()]['delivery_date'];
                 $customFields['shipperhq_dispatch_date'] = $rates[$shippingMethod->getId()]['dispatch_date'];
                 $shippingMethod->setCustomFields($customFields);
+
+                // Add to updates array
+                $updates[] = [
+                    'id' => $shippingMethod->getId(),
+                    'customFields' => $customFields
+                ];
             }
+        }
+
+        // Persist the custom fields
+        if (!empty($updates)) {
+            $this->shippingMethodRepository->update($updates, $context->getContext());
         }
 
         $this->logger->info('SHIPPERHQ: Filtered shipping methods', [
             'filtered_methods_count' => $shippingMethods->count(),
-            'removed_methods_count' => $removedCount
+            'removed_methods_count' => $removedCount,
+            'updated_methods_count' => count($updates)
         ]);
     }
 

@@ -1,24 +1,20 @@
-Shopware.Component.override('sw-order-detail-details', {
-    template: `
-        {% block sw_order_detail_details %}
-            {% parent %}
-            
-            <sw-card
-                class="sw-order-detail-details__shipperhq"
-                position-identifier="sw-order-detail-details-shipperhq"
-                title="ShipperHQ Information"
-            >
-                <pre style="white-space: pre-wrap;">{{ orderDeliveries }}</pre>
-            </sw-card>
-        {% endblock %}
-    `,
+import template from './sw-order-details-state-card.html.twig';
 
-    computed: {
-        orderDeliveries() {
-            if (!this.order || !this.order.deliveries) {
-                return 'No delivery information available';
-            }
-            return JSON.stringify(this.order.deliveries, null, 2);
+Shopware.Component.override('sw-order-detail-details', {
+    template,
+    methods: {
+        formatDate(dateString) {
+            if (!dateString) return '';
+            
+            // Input format: "28-04-2025 19:11:00 -0400"
+            const [datePart, timePart, offsetPart] = dateString.split(' ');
+            const [day, month, year] = datePart.split('-');
+            
+            // Reconstruct in ISO format: "2025-04-28T19:11:00-04:00"
+            const isoString = `${year}-${month}-${day}T${timePart}${offsetPart.slice(0,3)}:${offsetPart.slice(3)}`;
+            const date = new Date(isoString);
+            
+            return date.toLocaleString();
         }
     }
 });

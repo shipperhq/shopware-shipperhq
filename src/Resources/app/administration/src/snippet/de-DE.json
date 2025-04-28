@@ -14,5 +14,17 @@
       "error": "Fehler",
       "errorMessage": "Verbindung konnte nicht hergestellt werden. Bitte prüfen Sie Ihre Zugangsdaten",
       "missingCredentials": "Bitte geben Sie zuerst API Key und Authentifizierungscodes ein"
+    },
+    "global": {
+        "sw-order": {
+            "delivery-date": {
+                "empty": "Kein Lieferdatum verfügbar",
+                "label": "Voraussichtliches Lieferdatum"
+            },
+            "dispatch-date": {
+                "empty": "Kein Versanddatum verfügbar",
+                "label": "Versanddatum"
+            }
+        }
     }
-  }
+}
