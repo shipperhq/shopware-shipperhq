@@ -18,10 +18,4 @@ Shopware.Service().register('ShipperHQApiService', () => {
 // Import components
 import './component/shq-api-test-button';
 import './component/shq-api-refresh-methods-button';
-
-const { Component } = Shopware;
-
-// Completely hide the shipping section by rendering nothing
-Component.override('sw-order-delivery-detail-shipping', {
-    template: '<!-- Shipping section hidden by SHQRateProvider -->'
-});
+import './extension/sw-order-detail-details';
