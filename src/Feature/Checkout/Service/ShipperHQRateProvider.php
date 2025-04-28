@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace SHQ\RateProvider\Feature\Rating\Service;
+namespace SHQ\RateProvider\Feature\Checkout\Service;
 
 use Psr\Log\LoggerInterface;
 use Shopware\Core\Checkout\Cart\Cart;

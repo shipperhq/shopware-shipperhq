@@ -1,11 +1,11 @@
 <?php declare(strict_types=1);
 
-namespace SHQ\RateProvider\Feature\Rating\Service;
+namespace SHQ\RateProvider\Feature\Checkout\Service;
 
 use Symfony\Component\HttpFoundation\Session\SessionFactoryInterface;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
-class SessionRateStorage
+class SessionRateStorage 
 {
     private const CACHE_KEY = 'shipperhq_shipping_rates';
     private SessionFactoryInterface $sessionFactory;

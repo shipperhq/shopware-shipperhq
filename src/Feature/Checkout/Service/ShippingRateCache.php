@@ -10,16 +10,16 @@
  * @author ShipperHQ Team sales@shipperhq.com
  */
 
-namespace SHQ\RateProvider\Feature\Rating\Service;
+namespace SHQ\RateProvider\Feature\Checkout\Service;
 
 use Psr\Log\LoggerInterface;
 use Shopware\Core\Checkout\Cart\Cart;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
-use SHQ\RateProvider\Feature\Rating\Service\SessionRateStorage;
-use SHQ\RateProvider\Feature\Rating\Service\RateMatcher;
-use SHQ\RateProvider\Feature\Rating\Service\RateCacheKeyGenerator;
-use SHQ\RateProvider\Feature\Rating\Service\ShipperHQRateProvider;
+use SHQ\RateProvider\Feature\Checkout\Service\SessionRateStorage;
+use SHQ\RateProvider\Feature\Checkout\Service\RateMatcher;
+use SHQ\RateProvider\Feature\Checkout\Service\RateCacheKeyGenerator;
+use SHQ\RateProvider\Feature\Checkout\Service\ShipperHQRateProvider;
 
 class ShippingRateCache
 {

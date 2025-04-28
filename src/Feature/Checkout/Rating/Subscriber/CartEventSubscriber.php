@@ -10,7 +10,7 @@
  * @author ShipperHQ Team sales@shipperhq.com
  */
 
-namespace SHQ\RateProvider\Feature\Rating\Subscriber;
+namespace SHQ\RateProvider\Feature\Checkout\Rating\Subscriber;
 
 use Shopware\Core\Checkout\Cart\CartBehavior;
 use Shopware\Core\Checkout\Cart\Event\CartChangedEvent;
@@ -18,7 +18,7 @@ use Shopware\Core\Checkout\Cart\Event\BeforeLineItemAddedEvent;
 use Shopware\Core\Checkout\Cart\Event\BeforeLineItemQuantityChangedEvent;
 use Shopware\Core\Checkout\Cart\Event\CartCreatedEvent;
 use Shopware\Core\Checkout\Cart\Event\LineItemRemovedEvent;
-use SHQ\RateProvider\Feature\Rating\Service\ShippingRateCache;
+use SHQ\RateProvider\Feature\Checkout\Service\ShippingRateCache;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 /**
@@ -107,5 +107,4 @@ class CartEventSubscriber implements EventSubscriberInterface
         $behavior = new CartBehavior($permissions);
         $event->getCart()->setBehavior($behavior);
     }
-
 }

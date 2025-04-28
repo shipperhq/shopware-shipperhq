@@ -5,12 +5,6 @@
         <title lang="en-GB">Basic Settings</title>
         <title lang="de-DE">Grundeinstellungen</title>
 
-        <input-field type="bool">
-            <name>enabled</name>
-            <label lang="en-GB">Enable ShipperHQ</label>
-            <defaultValue>true</defaultValue>
-        </input-field>
-
         <input-field type="text">
             <name>title</name>
             <label lang="en-GB">Main Shipping Carrier Title</label>

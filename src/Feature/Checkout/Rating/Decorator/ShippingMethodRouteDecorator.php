@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace SHQ\RateProvider\Feature\Rating\Decorator;
+namespace SHQ\RateProvider\Feature\Checkout\Rating\Decorator;
 
 use Psr\Log\LoggerInterface;
 use Shopware\Core\Checkout\Cart\Delivery\DeliveryCalculator;
@@ -12,7 +12,7 @@ use Shopware\Core\Checkout\Shipping\ShippingMethodCollection;
 use Shopware\Core\Checkout\Shipping\ShippingMethodEntity;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
-use SHQ\RateProvider\Feature\Rating\Service\ShippingRateCache;
+use SHQ\RateProvider\Feature\Checkout\Service\ShippingRateCache;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Shopware\Core\Checkout\Cart\Cart;

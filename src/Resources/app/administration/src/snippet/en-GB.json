@@ -14,6 +14,16 @@
         "error": "Error",
         "errorMessage": "Could not connect to ShipperHQ API",
         "missingCredentials": "Please enter API Key and Authentication Code first"
+    },
+    "global": {
+        "sw-order": {
+            "delivery-date": {
+                "empty": "No delivery date available"
+            },
+            "dispatch-date": {
+                "empty": "No dispatch date available"
+            }
+        }
     }
-  }
+}
   

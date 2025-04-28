@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace SHQ\RateProvider\Feature\Rating\Subscriber;
+namespace SHQ\RateProvider\Feature\Checkout\Rating\Subscriber;
 
 use Psr\Log\LoggerInterface;
 use Shopware\Core\Checkout\Cart\Event\CartChangedEvent;
