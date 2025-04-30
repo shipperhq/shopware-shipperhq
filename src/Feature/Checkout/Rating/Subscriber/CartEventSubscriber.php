@@ -20,6 +20,7 @@ use Shopware\Core\Checkout\Cart\Event\CartCreatedEvent;
 use Shopware\Core\Checkout\Cart\Event\LineItemRemovedEvent;
 use SHQ\RateProvider\Feature\Checkout\Service\ShippingRateCache;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Shopware\Core\Checkout\Customer\Event\CustomerAddressChangedEvent;
 
 /**
  * Class CartEventSubscriber
@@ -44,7 +45,7 @@ class CartEventSubscriber implements EventSubscriberInterface
 
     public static function getSubscribedEvents(): array
     {
-        // Address change events are already handled by shopware
+        // Address change events are now handled here
         return [
             // Cart change events
             CartChangedEvent::class => 'onCartChanged',
@@ -52,6 +53,8 @@ class CartEventSubscriber implements EventSubscriberInterface
             LineItemRemovedEvent::class => 'onLineItemRemoved',
             BeforeLineItemQuantityChangedEvent::class => 'onLineItemQuantityChanged',  
             CartCreatedEvent::class => 'onCartCreated',
+            // Address change event
+            CustomerAddressChangedEvent::class => 'onCustomerAddressChanged',
         ];
     }
 
