@@ -1,25 +1,25 @@
 <?php declare(strict_types=1);
 
-/**
- * Shipper HQ
+/*
+ * ShipperHQ
  *
  * @category ShipperHQ
- * @package shopware-shipperhq
+ * @package ShipperHQ_Calendar
  * @copyright Copyright (c) 2025 Zowta LTD and Zowta LLC (http://www.ShipperHQ.com)
- * @license ShipperHQ 2025
+ * @license http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @author ShipperHQ Team sales@shipperhq.com
  */
 
 namespace SHQ\RateProvider;
 
+use Doctrine\DBAL\Connection;
+use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\Plugin;
 use Shopware\Core\Framework\Plugin\Context\InstallContext;
 use Shopware\Core\Framework\Plugin\Context\UninstallContext;
 use Shopware\Core\Framework\Plugin\Context\UpdateContext;
-use Doctrine\DBAL\Connection;
-use SHQ\RateProvider\Handlers\DatabaseHandler;
 use SHQ\RateProvider\Feature\ProductData\Service\CustomFieldService;
-use Shopware\Core\Framework\Context;
+use SHQ\RateProvider\Handlers\DatabaseHandler;
 
 class SHQRateProvider extends Plugin
 {

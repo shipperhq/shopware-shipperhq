@@ -1,13 +1,22 @@
 <?php declare(strict_types=1);
+/*
+ * ShipperHQ
+ *
+ * @category ShipperHQ
+ * @package ShipperHQ_Calendar
+ * @copyright Copyright (c) 2025 Zowta LTD and Zowta LLC (http://www.ShipperHQ.com)
+ * @license http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
+ * @author ShipperHQ Team sales@shipperhq.com
+ */
 
 namespace SHQ\RateProvider\Command;
 
 use SHQ\RateProvider\Feature\Checkout\Service\ShippingRateCache;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Symfony\Component\Console\Attribute\AsCommand;
 
 #[AsCommand(name: 'shq:clear-shipping-rate-cache', description: 'Clears the ShipperHQ shipping rate cache')]
 class ClearShippingRateCacheCommand extends Command

@@ -1,10 +1,19 @@
 <?php
+/*
+ * ShipperHQ
+ *
+ * @category ShipperHQ
+ * @package ShipperHQ_Calendar
+ * @copyright Copyright (c) 2025 Zowta LTD and Zowta LLC (http://www.ShipperHQ.com)
+ * @license http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
+ * @author ShipperHQ Team sales@shipperhq.com
+ */
 
 namespace SHQ\RateProvider\Feature\ConfigurationHandler\UseCase;
 
-use SHQ\RateProvider\Feature\ConfigurationHandler\Service\RefreshShippingMethodsServiceInterface;
-use Shopware\Core\Framework\Validation\DataBag\RequestDataBag;
 use Shopware\Core\Framework\Context;
+use Shopware\Core\Framework\Validation\DataBag\RequestDataBag;
+use SHQ\RateProvider\Feature\ConfigurationHandler\Service\RefreshShippingMethodsServiceInterface;
 
 class RefreshShippingMethodsUseCase
 {

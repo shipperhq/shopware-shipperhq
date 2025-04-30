@@ -1,17 +1,24 @@
 <?php
+/*
+ * ShipperHQ
+ *
+ * @category ShipperHQ
+ * @package ShipperHQ_Calendar
+ * @copyright Copyright (c) 2025 Zowta LTD and Zowta LLC (http://www.ShipperHQ.com)
+ * @license http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
+ * @author ShipperHQ Team sales@shipperhq.com
+ */
 
 namespace SHQ\RateProvider\Feature\ConfigurationHandler\Service;
 
+use Psr\Log\LoggerInterface;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
-use Shopware\Core\Framework\Uuid\Uuid;
-use Psr\Log\LoggerInterface;
-use SHQ\RateProvider\Service\ShipperHQClient;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
-use Symfony\Component\DependencyInjection\ContainerInterface;
+use Shopware\Core\Framework\Uuid\Uuid;
 use Shopware\Core\System\DeliveryTime\DeliveryTimeEntity;
-use SHQ\RateProvider\Feature\ConfigurationHandler\Service\RefreshShippingMethodsServiceInterface;
+use SHQ\RateProvider\Service\ShipperHQClient;
 
 class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInterface
 {

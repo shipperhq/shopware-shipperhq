@@ -1,33 +1,31 @@
 <?php declare(strict_types=1);
 
-/**
- * Shipper HQ
+/*
+ * ShipperHQ
  *
  * @category ShipperHQ
- * @package shopware-shipperhq
+ * @package ShipperHQ_Calendar
  * @copyright Copyright (c) 2025 Zowta LTD and Zowta LLC (http://www.ShipperHQ.com)
- * @license ShipperHQ 2025
+ * @license http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @author ShipperHQ Team sales@shipperhq.com
  */
 
 namespace SHQ\RateProvider\Helper;
 
 use Psr\Log\LoggerInterface;
-use Shopware\Core\Checkout\Cart\Cart;
-use Shopware\Core\Checkout\Cart\LineItem\LineItem;
-use Shopware\Core\Checkout\Customer\Aggregate\CustomerAddress\CustomerAddressEntity;
-use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
-use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
-use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
-use Shopware\Core\System\SalesChannel\SalesChannelContext;
-use Shopware\Core\System\SystemConfig\SystemConfigService;
-use ShipperHQ\WS\Rate\Request\RateRequest;
-use ShipperHQ\WS\Shared\Credentials;
-use ShipperHQ\WS\Shared\SiteDetails;
-use ShipperHQ\WS\Shared\Address;
 use ShipperHQ\WS\Rate\Request\Checkout\Cart as ShipperHQCart;
 use ShipperHQ\WS\Rate\Request\Checkout\Item;
 use ShipperHQ\WS\Rate\Request\CustomerDetails;
+use ShipperHQ\WS\Rate\Request\RateRequest;
+use ShipperHQ\WS\Shared\Address;
+use ShipperHQ\WS\Shared\Credentials;
+use ShipperHQ\WS\Shared\SiteDetails;
+use Shopware\Core\Checkout\Cart\Cart;
+use Shopware\Core\Checkout\Cart\LineItem\LineItem;
+use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
+use Shopware\Core\System\SalesChannel\SalesChannelContext;
+use Shopware\Core\System\SystemConfig\SystemConfigService;
 
 class Mapper
 {

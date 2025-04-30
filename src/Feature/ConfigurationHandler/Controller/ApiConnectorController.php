@@ -1,13 +1,22 @@
 <?php
+/*
+ * ShipperHQ
+ *
+ * @category ShipperHQ
+ * @package ShipperHQ_Calendar
+ * @copyright Copyright (c) 2025 Zowta LTD and Zowta LLC (http://www.ShipperHQ.com)
+ * @license http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
+ * @author ShipperHQ Team sales@shipperhq.com
+ */
 
 namespace SHQ\RateProvider\Feature\ConfigurationHandler\Controller;
 
 use Psr\Log\LoggerInterface;
 use Shopware\Core\Framework\Validation\DataBag\RequestDataBag;
+use SHQ\RateProvider\Feature\ConfigurationHandler\UseCase\RefreshShippingMethodsUseCase;
+use SHQ\RateProvider\Feature\ConfigurationHandler\UseCase\TestConnectionUseCase;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
-use SHQ\RateProvider\Feature\ConfigurationHandler\UseCase\TestConnectionUseCase;
-use SHQ\RateProvider\Feature\ConfigurationHandler\UseCase\RefreshShippingMethodsUseCase;
 
 #[Route(defaults: ['_routeScope' => ['api']])]
 class ApiConnectorController

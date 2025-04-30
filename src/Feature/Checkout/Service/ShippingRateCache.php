@@ -1,12 +1,12 @@
 <?php declare(strict_types=1);
 
-/**
- * Shipper HQ
+/*
+ * ShipperHQ
  *
  * @category ShipperHQ
- * @package shopware-shipperhq
+ * @package ShipperHQ_Calendar
  * @copyright Copyright (c) 2025 Zowta LTD and Zowta LLC (http://www.ShipperHQ.com)
- * @license ShipperHQ 2025
+ * @license http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @author ShipperHQ Team sales@shipperhq.com
  */
 
@@ -16,10 +16,6 @@ use Psr\Log\LoggerInterface;
 use Shopware\Core\Checkout\Cart\Cart;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
-use SHQ\RateProvider\Feature\Checkout\Service\SessionRateStorage;
-use SHQ\RateProvider\Feature\Checkout\Service\RateMatcher;
-use SHQ\RateProvider\Feature\Checkout\Service\RateCacheKeyGenerator;
-use SHQ\RateProvider\Feature\Checkout\Service\ShipperHQRateProvider;
 
 class ShippingRateCache
 {

@@ -55,9 +55,38 @@ This Shopware plugin integrates ShipperHQ's rating engine, allowing Shopware sto
 
 ## ⚙️ Configuration
 
-1. Navigate to **Settings > System > Plugins**
-2. Find and click on **"SHQRateProvider"** in the plugin list
+1. Navigate to **Extensions > My Extensions**
+2. Find and click on **"ShipperHQ Shipping Rates"** in the extension list
 3. Configure your **ShipperHQ API credentials and settings**
+4. Save the configuration
+5. Click "Reload Shipping Methods" to fetch available shipping methods from ShipperHQ
+6. Clear the Shopware cache again:
+   ```bash
+   bin/console cache:clear
+   ```
+
+---
+
+## 🛠️ Troubleshooting
+
+### All Shipping Methods Are Shown at Checkout (Including Unavailable Ones)
+
+**Issue:**
+At checkout, every shipping method appears, even those that should not be available. When selecting an unavailable method, you may see an error such as:
+
+```
+USPS Priority Mail is blocked for your current shopping cart
+```
+
+**Solution:**
+1. Go to the ShipperHQ app settings in Shopware.
+2. Click the **Reload Shipping Methods** button.
+3. Clear the Shopware cache:
+   ```bash
+   bin/console cache:clear
+   ```
+
+This will refresh the list of available shipping methods and resolve the error.
 
 ---
 
@@ -86,3 +115,5 @@ See included license files.
 ## ©️ Copyright
 
 © 2025 Zowta LLC — [ShipperHQ.com](http://www.ShipperHQ.com)
+
+---

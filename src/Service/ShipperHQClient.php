@@ -1,28 +1,28 @@
 <?php declare(strict_types=1);
 
-/**
- * Shipper HQ
+/*
+ * ShipperHQ
  *
  * @category ShipperHQ
- * @package shopware-shipperhq
+ * @package ShipperHQ_Calendar
  * @copyright Copyright (c) 2025 Zowta LTD and Zowta LLC (http://www.ShipperHQ.com)
- * @license ShipperHQ 2025
+ * @license http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
  * @author ShipperHQ Team sales@shipperhq.com
  */
 
 namespace SHQ\RateProvider\Service;
 
 use Psr\Log\LoggerInterface;
-use SHQ\RateProvider\Config\ShipperHQClientConfig;
+use ShipperHQ\Lib\Rate\Helper;
+use ShipperHQ\WS\AllowedMethods\AllowedMethodsRequest;
 use ShipperHQ\WS\Client\WebServiceClient;
 use ShipperHQ\WS\Rate\Request\RateRequest;
-use ShipperHQ\WS\AllowedMethods\AllowedMethodsRequest;
+use ShipperHQ\WS\Rate\Response\RateResponse;
 use ShipperHQ\WS\Shared\Credentials;
 use ShipperHQ\WS\Shared\SiteDetails;
 use ShipperHQ\WS\WebServiceRequestInterface;
+use SHQ\RateProvider\Config\ShipperHQClientConfig;
 use SHQ\RateProvider\Helper\Mapper;
-use ShipperHQ\Lib\Rate\Helper;
-use ShipperHQ\WS\Rate\Response\RateResponse;
 
 /**
  * This class is used to interact with the ShipperHQ API
