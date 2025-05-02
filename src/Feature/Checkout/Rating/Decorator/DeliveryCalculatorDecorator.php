@@ -24,6 +24,8 @@ use Shopware\Core\Checkout\Cart\Tax\Struct\TaxRuleCollection;
 use Shopware\Core\Checkout\Shipping\ShippingMethodEntity;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use SHQ\RateProvider\Feature\Checkout\Service\ShippingRateCache;
+use SHQ\RateProvider\Feature\Checkout\Service\RateCacheKeyGenerator;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 class DeliveryCalculatorDecorator extends DeliveryCalculator
 {
@@ -32,10 +34,26 @@ class DeliveryCalculatorDecorator extends DeliveryCalculator
         private readonly QuantityPriceCalculator $priceCalculator,
         private readonly LoggerInterface $logger,
         private readonly ShippingRateCache $rateCache,
-    ) {}// TODO: Actually learn php
+        private readonly RateCacheKeyGenerator $rateCacheKeyGenerator,
+        private readonly RequestStack $requestStack,
+    ) {}
 
     public function calculate(CartDataCollection $data, Cart $cart, DeliveryCollection $deliveries, SalesChannelContext $context): void
     {
+        $this->rateCache->clearCache();
+        // --- Address hash tracking logic ---
+        $session = $this->requestStack->getSession();
+        $currentAddressHash = $this->rateCacheKeyGenerator->generateKey($cart, $context);
+        $lastAddressHash = $session->get('shipperhq_last_address_hash');
+        if ($currentAddressHash !== $lastAddressHash) {
+            $this->logger->info('SHIPPERHQ: Address hash changed, clearing shipping rate cache', [
+                'last_hash' => $lastAddressHash,
+                'current_hash' => $currentAddressHash
+            ]);
+            $this->rateCache->clearCache();
+            $session->set('shipperhq_last_address_hash', $currentAddressHash);
+        }
+        // --- End address hash tracking logic ---
 
         foreach ($deliveries as $delivery) {
             if ($this->isShipperHQShippingMethod($delivery->getShippingMethod())) {

@@ -15,7 +15,7 @@ use Psr\Log\LoggerInterface;
 use Shopware\Core\Checkout\Cart\Cart;
 use Shopware\Core\Checkout\Cart\Delivery\DeliveryCalculator;
 use Shopware\Core\Checkout\Cart\SalesChannel\CartService;
-use Shopware\Core\Checkout\Shipping\SalesChannel\ShippingMethodRoute;
+use Shopware\Core\Checkout\Shipping\SalesChannel\AbstractShippingMethodRoute;
 use Shopware\Core\Checkout\Shipping\SalesChannel\ShippingMethodRouteResponse;
 use Shopware\Core\Checkout\Shipping\ShippingMethodCollection;
 use Shopware\Core\Checkout\Shipping\ShippingMethodEntity;
@@ -26,12 +26,12 @@ use SHQ\RateProvider\Feature\Checkout\Service\ShippingRateCache;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 
-class ShippingMethodRouteDecorator extends ShippingMethodRoute
+class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
 {
     private static int $requestCounter = 0;
 
     public function __construct(
-        private readonly ShippingMethodRoute $decorated,
+        private readonly AbstractShippingMethodRoute $decorated,
         private readonly DeliveryCalculator $deliveryCalculator,
         private readonly LoggerInterface $logger,
         private readonly RequestStack $requestStack,
@@ -40,7 +40,7 @@ class ShippingMethodRouteDecorator extends ShippingMethodRoute
         private readonly EntityRepository $shippingMethodRepository,
     ) {}
 
-    public function getDecorated(): ShippingMethodRoute
+    public function getDecorated(): AbstractShippingMethodRoute
     {
         return $this->decorated;
     }
@@ -92,6 +92,19 @@ class ShippingMethodRouteDecorator extends ShippingMethodRoute
 
     private function handleValidationCall(Request $request, SalesChannelContext $context, Criteria $criteria): ShippingMethodRouteResponse
     {
+        // --- Address hash tracking logic ---
+        $session = $this->requestStack->getSession();
+        $currentAddressHash = $this->rateCacheKeyGenerator->generateKey($this->getCart($context) ?? new \Shopware\Core\Checkout\Cart\Cart($context->getToken()), $context);
+        $lastAddressHash = $session->get('shipperhq_last_address_hash');
+        if ($currentAddressHash !== $lastAddressHash) {
+            $this->logger->info('SHIPPERHQ: Address hash changed, clearing shipping rate cache', [
+                'last_hash' => $lastAddressHash,
+                'current_hash' => $currentAddressHash
+            ]);
+            $this->rateCache->clearCache();
+            $session->set('shipperhq_last_address_hash', $currentAddressHash);
+        }
+        // --- End address hash tracking logic ---
         $response = $this->decorated->load($request, $context, $criteria);
         $shippingMethods = $response->getShippingMethods();
 

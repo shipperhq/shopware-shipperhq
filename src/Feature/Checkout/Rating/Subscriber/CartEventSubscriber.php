@@ -20,7 +20,9 @@ use Shopware\Core\Checkout\Cart\Event\CartCreatedEvent;
 use Shopware\Core\Checkout\Cart\Event\LineItemRemovedEvent;
 use SHQ\RateProvider\Feature\Checkout\Service\ShippingRateCache;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Shopware\Core\Checkout\Customer\Event\CustomerAddressChangedEvent;
+use Shopware\Core\Checkout\Customer\Event\CustomerSetDefaultBillingAddressEvent;
+use Shopware\Core\Checkout\Customer\Event\CustomerSetDefaultShippingAddressEvent;
+use Shopware\Core\Framework\DataAbstractionLayer\Event\EntityWrittenEvent;
 
 /**
  * Class CartEventSubscriber
@@ -52,9 +54,7 @@ class CartEventSubscriber implements EventSubscriberInterface
             BeforeLineItemAddedEvent::class => 'onLineItemAdded',
             LineItemRemovedEvent::class => 'onLineItemRemoved',
             BeforeLineItemQuantityChangedEvent::class => 'onLineItemQuantityChanged',  
-            CartCreatedEvent::class => 'onCartCreated',
-            // Address change event
-            CustomerAddressChangedEvent::class => 'onCustomerAddressChanged',
+            CartCreatedEvent::class => 'onCartCreated'
         ];
     }
 
@@ -86,14 +86,6 @@ class CartEventSubscriber implements EventSubscriberInterface
      * Handle line item quantity changed event
      */
     public function onLineItemQuantityChanged(): void
-    {
-        $this->rateCache->clearCache();
-    }
-
-    /**
-     * Handle customer address changed event
-     */
-    public function onCustomerAddressChanged(): void
     {
         $this->rateCache->clearCache();
     }
