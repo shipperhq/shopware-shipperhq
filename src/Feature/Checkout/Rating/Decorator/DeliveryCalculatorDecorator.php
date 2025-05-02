@@ -40,7 +40,6 @@ class DeliveryCalculatorDecorator extends DeliveryCalculator
 
     public function calculate(CartDataCollection $data, Cart $cart, DeliveryCollection $deliveries, SalesChannelContext $context): void
     {
-        $this->rateCache->clearCache();
         // --- Address hash tracking logic ---
         $session = $this->requestStack->getSession();
         $currentAddressHash = $this->rateCacheKeyGenerator->generateKey($cart, $context);
