@@ -23,6 +23,7 @@ use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use SHQ\RateProvider\Feature\Checkout\Service\ShippingRateCache;
+use SHQ\RateProvider\Feature\Checkout\Service\RateCacheKeyGenerator;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -38,6 +39,7 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
         private readonly CartService $cartService,
         private readonly ShippingRateCache $rateCache,
         private readonly EntityRepository $shippingMethodRepository,
+        private readonly RateCacheKeyGenerator $rateCacheKeyGenerator,
     ) {}
 
     public function getDecorated(): AbstractShippingMethodRoute
