@@ -23,7 +23,6 @@ use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use SHQ\RateProvider\Feature\Checkout\Service\ShippingRateCache;
-use SHQ\RateProvider\Feature\Checkout\Service\RateCacheKeyGenerator;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -39,7 +38,6 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
         private readonly CartService $cartService,
         private readonly ShippingRateCache $rateCache,
         private readonly EntityRepository $shippingMethodRepository,
-        private readonly RateCacheKeyGenerator $rateCacheKeyGenerator,
     ) {}
 
     public function getDecorated(): AbstractShippingMethodRoute
@@ -94,19 +92,8 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
 
     private function handleValidationCall(Request $request, SalesChannelContext $context, Criteria $criteria): ShippingMethodRouteResponse
     {
-        // --- Address hash tracking logic ---
-        $session = $this->requestStack->getSession();
-        $currentAddressHash = $this->rateCacheKeyGenerator->generateKey($this->getCart($context) ?? new \Shopware\Core\Checkout\Cart\Cart($context->getToken()), $context);
-        $lastAddressHash = $session->get('shipperhq_last_address_hash');
-        if ($currentAddressHash !== $lastAddressHash) {
-            $this->logger->info('SHIPPERHQ: Address hash changed, clearing shipping rate cache', [
-                'last_hash' => $lastAddressHash,
-                'current_hash' => $currentAddressHash
-            ]);
-            $this->rateCache->clearCache();
-            $session->set('shipperhq_last_address_hash', $currentAddressHash);
-        }
-        // --- End address hash tracking logic ---
+        $this->logger->info('SHIPPERHQ: Validation call - filtering shipping methods');
+
         $response = $this->decorated->load($request, $context, $criteria);
         $shippingMethods = $response->getShippingMethods();
 

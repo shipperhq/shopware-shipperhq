@@ -40,19 +40,6 @@ class DeliveryCalculatorDecorator extends DeliveryCalculator
 
     public function calculate(CartDataCollection $data, Cart $cart, DeliveryCollection $deliveries, SalesChannelContext $context): void
     {
-        // --- Address hash tracking logic ---
-        $session = $this->requestStack->getSession();
-        $currentAddressHash = $this->rateCacheKeyGenerator->generateKey($cart, $context);
-        $lastAddressHash = $session->get('shipperhq_last_address_hash');
-        if ($currentAddressHash !== $lastAddressHash) {
-            $this->logger->info('SHIPPERHQ: Address hash changed, clearing shipping rate cache', [
-                'last_hash' => $lastAddressHash,
-                'current_hash' => $currentAddressHash
-            ]);
-            $this->rateCache->clearCache();
-            $session->set('shipperhq_last_address_hash', $currentAddressHash);
-        }
-        // --- End address hash tracking logic ---
 
         foreach ($deliveries as $delivery) {
             if ($this->isShipperHQShippingMethod($delivery->getShippingMethod())) {

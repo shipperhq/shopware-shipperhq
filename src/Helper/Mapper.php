@@ -279,7 +279,15 @@ class Mapper
         if ($shippingAddress) {
             $destination->city = $shippingAddress->getCity();
             $destination->country = $shippingAddress->getCountry() ? $shippingAddress->getCountry()->getIso() : '';
-            $destination->region = $shippingAddress->getCountryState() ? $shippingAddress->getCountryState()->getShortCode() : '';
+            $destination->region = '';
+            if ($shippingAddress->getCountryState()) {
+                $shortCode = $shippingAddress->getCountryState()->getShortCode();
+                if ($shortCode && strpos($shortCode, '-') !== false) {
+                    $destination->region = explode('-', $shortCode)[1];
+                } else {
+                    $destination->region = $shortCode;
+                }
+            }
             $destination->street = $shippingAddress->getStreet();
             $destination->zipcode = $shippingAddress->getZipcode();
         }
