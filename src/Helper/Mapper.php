@@ -590,8 +590,8 @@ class Mapper
                         $shippingRateObject->setTotalPrice($shippingRate['totalCharges'] ?? 0.0);
                         $shippingRateObject->setCurrencyCode($shippingRate['currency'] ?? '');
                         $shippingRateObject->setAttributes($shippingRate['attributes'] ?? []);
-                        $shippingRateObject->setDeliveryDate($shippingRate['deliveryDateStr'] ?? '');
-                        $shippingRateObject->setDispatchDate($shippingRate['dispatchDateStr'] ?? '');
+                        $shippingRateObject->setDeliveryDateStr($shippingRate['deliveryDateStr'] ?? '');
+                        $shippingRateObject->setDispatchDateStr($shippingRate['dispatchDateStr'] ?? '');
                         $shippingRateObjects[] = $shippingRateObject;
                     }
                     
