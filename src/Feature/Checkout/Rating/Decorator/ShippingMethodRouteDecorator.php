@@ -48,7 +48,7 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
     {
         $this->logRequestDetails($request, $criteria);
 
-        return $this->handleCall($request, $context, $criteria);
+        return $this->execute($request, $context, $criteria);
     }
 
     private function logRequestDetails(Request $request, Criteria $criteria): void
@@ -60,9 +60,9 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
         ]);
     }
 
-    private function handleCall(Request $request, SalesChannelContext $context, Criteria $criteria): ShippingMethodRouteResponse
+    private function execute(Request $request, SalesChannelContext $context, Criteria $criteria): ShippingMethodRouteResponse
     {
-        $this->logger->info('SHIPPERHQ: Validation call - filtering shipping methods');
+        $this->logger->info('SHIPPERHQ: ShippingMethodRouteDecorator::load called');
 
         $response = $this->decorated->load($request, $context, $criteria);
         $shippingMethods = $response->getShippingMethods();
