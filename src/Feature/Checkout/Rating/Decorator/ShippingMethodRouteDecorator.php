@@ -28,7 +28,6 @@ use Symfony\Component\HttpFoundation\RequestStack;
 
 class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
 {
-    private static int $requestCounter = 0;
 
     public function __construct(
         private readonly AbstractShippingMethodRoute $decorated,
@@ -47,50 +46,21 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
 
     public function load(Request $request, SalesChannelContext $context, Criteria $criteria): ShippingMethodRouteResponse
     {
-        $requestId = $this->incrementRequestCounter();
-        $this->logRequestDetails($request, $criteria, $requestId);
+        $this->logRequestDetails($request, $criteria);
 
-        if ($this->isInitialCall($requestId)) {
-            return $this->handleInitialCall($request, $context, $criteria);
-        }
-
-        return $this->handleValidationCall($request, $context, $criteria);
+        return $this->handleCall($request, $context, $criteria);
     }
 
-    private function incrementRequestCounter(): int
-    {
-        return ++self::$requestCounter;
-    }
-
-    private function logRequestDetails(Request $request, Criteria $criteria, int $requestId): void
+    private function logRequestDetails(Request $request, Criteria $criteria): void
     {
         $this->logger->info('SHIPPERHQ: ShippingMethodRouteDecorator::load called', [
-            'request_id' => $requestId,
             'request_uri' => $request->getUri(),
             'request_method' => $request->getMethod(),
             'criteria' => $criteria->getFilters(),
-            'is_initial_call' => $this->isInitialCall($requestId),
-            'is_validation_call' => $this->isValidationCall($requestId)
         ]);
     }
 
-    private function isInitialCall(int $requestId): bool
-    {
-        return $requestId === 1;
-    }
-
-    private function isValidationCall(int $requestId): bool
-    {
-        return $requestId === 2;
-    }
-
-    private function handleInitialCall(Request $request, SalesChannelContext $context, Criteria $criteria): ShippingMethodRouteResponse
-    {
-        $this->logger->info('SHIPPERHQ: Initial call - returning all shipping methods');
-        return $this->decorated->load($request, $context, $criteria);
-    }
-
-    private function handleValidationCall(Request $request, SalesChannelContext $context, Criteria $criteria): ShippingMethodRouteResponse
+    private function handleCall(Request $request, SalesChannelContext $context, Criteria $criteria): ShippingMethodRouteResponse
     {
         $this->logger->info('SHIPPERHQ: Validation call - filtering shipping methods');
 
