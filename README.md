@@ -1,93 +1,119 @@
-# shopware-shipperhq
+# 🚀 ShipperHQ Plugin for Shopware 6
 
+This Shopware plugin integrates ShipperHQ's rating engine, allowing Shopware stores to fetch live shipping rates from the ShipperHQ API during checkout.
 
+---
 
-## Getting started
+## 📦 Features
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+- 🔄 Integration with ShipperHQ rate calculation services
+- 📡 Real-time shipping rate calculations
+- 🚚 Support for multiple carriers and shipping methods
+- 🧩 Custom rate rules and conditions
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+---
 
-## Add your files
+## ✅ Requirements
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+- 🧱 Shopware **6.5.x** or higher
+- 🐘 PHP **8.1** or higher
+- 🔐 Valid ShipperHQ API credentials
+
+---
+
+## 🛠️ Installation Instructions
+
+### 📁 1. Upload the Plugin
+
+1. Unzip the provided archive
+2. Rename the extracted folder to `SHQRateProvider` (if not already)
+3. Upload the folder to your Shopware installation at:
+   ```
+   custom/plugins/SHQRateProvider/
+   ```
+4. cd into the plugin directory:
+   ```bash
+   cd custom/plugins/SHQRateProvider/
+   ```
+5. Run composer install to install the dependencies:
+   ```bash
+   composer install
+   ```
+6. Ensure the plugin shows up in the Shopware plugin list:
+   ```bash
+   bin/console plugin:refresh
+   ```
+7. Install and activate the plugin:
+   ```bash
+    bin/console plugin:install --activate SHQRateProvider
+    ```
+8. Clear the cache: 
+   ```bash
+   bin/console cache:clear
+   ```
+---
+
+## ⚙️ Configuration
+
+1. Navigate to **Extensions > My Extensions**
+2. Find and click on **"ShipperHQ Shipping Rates"** in the extension list
+3. Configure your **ShipperHQ API credentials and settings**
+4. Save the configuration
+5. Click "Reload Shipping Methods" to fetch available shipping methods from ShipperHQ
+6. Clear the Shopware cache again:
+   ```bash
+   bin/console cache:clear
+   ```
+
+---
+
+## 🛠️ Troubleshooting
+
+### All Shipping Methods Are Shown at Checkout (Including Unavailable Ones)
+
+**Issue:**
+At checkout, every shipping method appears, even those that should not be available. When selecting an unavailable method, you may see an error such as:
 
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/ShipperHQ/Platform/shopware/shopware-shipperhq.git
-git branch -M main
-git push -uf origin main
+USPS Priority Mail is blocked for your current shopping cart
 ```
 
-## Integrate with your tools
+**Solution:**
+1. Go to the ShipperHQ app settings in Shopware.
+2. Click the **Reload Shipping Methods** button.
+3. Clear the Shopware cache:
+   ```bash
+   bin/console cache:clear
+   ```
 
-- [ ] [Set up project integrations](https://gitlab.com/ShipperHQ/Platform/shopware/shopware-shipperhq/-/settings/integrations)
+This will refresh the list of available shipping methods and resolve the error.
 
-## Collaborate with your team
+---
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+## 🧰 Support
 
-## Test and Deploy
+For assistance, please visit our  
+📖 [Help Center](https://docs.shipperhq.com/)  
+✉️ Or contact ShipperHQ support: [support@shipperhq.com](mailto:support@shipperhq.com)  
+📞 For other options, visit our [Contact Us](https://shipperhq.com/contact/) page
 
-Use the built-in continuous integration in GitLab.
+---
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+## 🤝 Contributing
 
-***
+We welcome contributions!  
+The best way to contribute is to open a [pull request on GitHub](https://help.github.com/articles/using-pull-requests).
 
-# Editing this README
+---
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+## 📄 License
 
-## Suggestions for a good README
+See included license files.
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+---
 
-## Name
-Choose a self-explaining name for your project.
+## ©️ Copyright
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+© 2025 Zowta LLC — [ShipperHQ.com](http://www.ShipperHQ.com)
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+---

@@ -1,0 +1,31 @@
+{
+    "shqApiRefreshMethodsButton": {
+      "buttonLabel": "Reload Shipping Methods",
+      "success": "Success",
+      "successMessage": "Shipping Methods Successfully Reloaded",
+      "error": "Error",
+      "errorMessage": "Could not connect. Please check your credentials",
+      "missingCredentials": "Please enter API Key and Authentication Code first"
+    },
+    "shqApiTestButton": {
+        "buttonLabel": "Test API Connection",
+        "success": "Success",
+        "successMessage": "Successfully connected to ShipperHQ API",
+        "error": "Error",
+        "errorMessage": "Could not connect to ShipperHQ API",
+        "missingCredentials": "Please enter API Key and Authentication Code first"
+    },
+    "global": {
+        "sw-order": {
+            "delivery-date": {
+                "empty": "No delivery date available",
+                "label": "Estimated Delivery Date"
+            },
+            "dispatch-date": {
+                "empty": "No dispatch date available",
+                "label": "Dispatch Date"
+            }
+        }
+    }
+}
+  
