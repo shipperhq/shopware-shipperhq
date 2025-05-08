@@ -10,11 +10,24 @@
             "homepage": "https://shipperhq.com"
         }
     ],
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "git@gitlab.com:ShipperHQ/Platform/shared/library-ws.git",
+            "options": {
+                "symlink": false
+            }
+        },
+        {
+            "type": "vcs",
+            "url": "git@gitlab.com:ShipperHQ/Platform/shared/library-shipper.git"
+        }
+    ],
     "require": {
-        "shopware/core": "~6.6.0",
-        "shipperhq/library-ws": "^20.7.0",
-        "shipperhq/library-shipper": "^20.17",
-        "shipperhq/library-graphql": "^20.4.0"
+        "shopware/core": "^6.6.0",
+        "shipperhq/library-ws": "^20.19.1",
+        "shipperhq/library-shipper": "^20.9.1",
+        "guzzlehttp/guzzle": "^7.0"
     },
     "extra": {
         "shopware-plugin-class": "SHQ\\RateProvider\\SHQRateProvider",
@@ -39,7 +52,9 @@
     },
     "autoload": {
         "psr-4": {
-            "SHQ\\RateProvider\\": "src/"
+            "SHQ\\RateProvider\\": "src/",
+            "ShipperHQ\\WS\\": "vendor/shipperhq/library-ws/src/",
+            "ShipperHQ\\Lib\\": "vendor/shipperhq/library-shipper/src/"
         }
     },
     "config": {

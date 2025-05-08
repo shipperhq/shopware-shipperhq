@@ -1,0 +1,56 @@
+<?xml version="1.0" ?>
+<!--
+  ~ ShipperHQ
+  ~
+  ~ @category ShipperHQ
+  ~ @package SHQ\RateProvider
+  ~ @copyright Copyright (c) 2025 Zowta LTD and Zowta LLC (http://www.ShipperHQ.com)
+  ~ @license http://opensource.org/licenses/osl-3.0.php Open Software License (OSL 3.0)
+  ~ @author ShipperHQ Team sales@shipperhq.com
+  -->
+
+<container xmlns="http://symfony.com/schema/dic/services"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+
+    <services>
+        <!-- Feature-specific services -->
+        <service id="SHQ\RateProvider\Feature\Checkout\Rating\Subscriber\CartEventSubscriber">
+            <argument type="service" id="SHQ\RateProvider\Feature\Checkout\Service\ShippingRateCache"/>
+            <tag name="kernel.event_subscriber"/>
+        </service>
+
+        <service id="SHQ\RateProvider\Feature\Checkout\Rating\Subscriber\ShippingMethodLoggerSubscriber">
+            <argument type="service" id="logger"/>
+            <tag name="kernel.event_subscriber"/>
+        </service>
+
+        <service id="SHQ\RateProvider\Feature\Checkout\Rating\Decorator\DeliveryCalculatorDecorator" decorates="Shopware\Core\Checkout\Cart\Delivery\DeliveryCalculator">
+            <argument type="service" id="SHQ\RateProvider\Feature\Checkout\Rating\Decorator\DeliveryCalculatorDecorator.inner"/>
+            <argument type="service" id="Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator"/>
+            <argument type="service" id="logger"/>
+            <argument type="service" id="SHQ\RateProvider\Feature\Checkout\Service\ShippingRateCache"/>
+            <argument type="service" id="SHQ\RateProvider\Feature\Checkout\Service\RateCacheKeyGenerator"/>
+            <argument type="service" id="request_stack"/>
+        </service>
+
+        <service id="SHQ\RateProvider\Feature\Checkout\Rating\Decorator\ShippingMethodRouteDecorator"
+        decorates="Shopware\Core\Checkout\Shipping\SalesChannel\ShippingMethodRoute">
+            <argument type="service" id=".inner"/>
+            <argument type="service" id="Shopware\Core\Checkout\Cart\Delivery\DeliveryCalculator"/>
+            <argument type="service" id="logger"/>
+            <argument type="service" id="request_stack"/>
+            <argument type="service" id="Shopware\Core\Checkout\Cart\SalesChannel\CartService"/>
+            <argument type="service" id="SHQ\RateProvider\Feature\Checkout\Service\ShippingRateCache"/>
+            <argument type="service" id="shipping_method.repository"/>
+        </service>
+
+        <service id="SHQ\RateProvider\Feature\Checkout\Rating\Decorator\OffcanvasCartPageLoaderDecorator"
+            decorates="Shopware\Storefront\Page\Checkout\Offcanvas\OffcanvasCartPageLoader">
+            <argument type="service" id="SHQ\RateProvider\Feature\Checkout\Rating\Decorator\OffcanvasCartPageLoaderDecorator.inner"/>
+            <argument type="service" id="SHQ\RateProvider\Feature\Checkout\Service\ShippingRateCache"/>
+            <argument type="service" id="Shopware\Core\Checkout\Cart\SalesChannel\CartService"/>
+            <argument type="service" id="logger"/>
+        </service>
+    </services>
+</container>
