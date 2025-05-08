@@ -1,0 +1,50 @@
+{% block sw_order_detail_details %}
+    {% parent %}
+    
+    <sw-card
+        class="sw-order-detail-details__shipperhq"
+        position-identifier="sw-order-detail-details-shipperhq"
+        title="ShipperHQ Information"
+    >
+        <sw-container>
+            <template v-for="delivery in order.deliveries">
+                <sw-description-list columns="1fr" grid="1fr">
+                    <dt>{{ $tc('global.sw-order.dispatch-date.label') }}</dt>
+                    <dd v-if="delivery.customFields?.shipperhq_dispatch_date">
+                        <sw-text-field
+                            :value="formatDate(delivery.customFields.shipperhq_dispatch_date)"
+                            :disabled="true"
+                            :copyable="false"
+                        ></sw-text-field>
+                    </dd>
+                    <dd v-else>{{ $tc('global.sw-order.dispatch-date.empty') }}</dd>
+
+                    <dt>{{ $tc('global.sw-order.delivery-date.label') }}</dt>
+                    <dd v-if="delivery.customFields?.shipperhq_delivery_date">
+                        <sw-text-field
+                            :value="formatDate(delivery.customFields.shipperhq_delivery_date)"
+                            :disabled="true"
+                            :copyable="false"
+                        ></sw-text-field>
+                    </dd>
+                    <dd v-else>{{ $tc('global.sw-order.delivery-date.empty') }}</dd>
+                </sw-description-list>
+            </template>
+        </sw-container>
+    </sw-card>
+
+    <style lang="scss">
+    .sw-description-list {
+        dt {
+            color: #758CA3;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        dd {
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+    }
+    </style>
+{% endblock %} 
