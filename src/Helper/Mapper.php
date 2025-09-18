@@ -80,7 +80,7 @@ class Mapper
         // }
 
         $shipperHQRequest = new RateRequest();
-        $shipperHQRequest->cart = $this->getCartDetails($cart);
+        $shipperHQRequest->cart = $this->getCartDetails($cart, $context);
         $shipperHQRequest->destination = $this->getDestination($context);
         $shipperHQRequest->customerDetails = $this->getCustomerGroupDetails($context);
         $shipperHQRequest->cartType = $this->getCartType();
@@ -125,13 +125,14 @@ class Mapper
      * Format cart for ShipperHQ
      *
      * @param Cart $cart
+     * @param SalesChannelContext $context
      * @return ShipperHQCart
      */
-    public function getCartDetails(Cart $cart): ShipperHQCart
+    public function getCartDetails(Cart $cart, SalesChannelContext $context): ShipperHQCart
     {
         $cartDetails = new ShipperHQCart();
         $cartDetails->declaredValue = $cart->getPrice()->getTotalPrice();
-        $cartDetails->items = $this->getFormattedItems($cart->getLineItems()->getElements());
+        $cartDetails->items = $this->getFormattedItems($cart->getLineItems()->getElements(), false, $context);
         
         return $cartDetails;
     }
@@ -180,9 +181,10 @@ class Mapper
      *
      * @param array $items
      * @param bool $useChild
+     * @param SalesChannelContext $context
      * @return array
      */
-    private function getFormattedItems(array $items, bool $useChild = false): array
+    private function getFormattedItems(array $items, bool $useChild = false, SalesChannelContext $context): array
     {
         $formattedItems = [];
         $counter = 0;
@@ -208,11 +210,11 @@ class Mapper
             $id = $counter;
             $productType = "simple"; // Shopware doesn't have the same concept of configurable products as Magento
 
-            $weight = $product->getWeight() ?? 0;
+            $weight = $item->getDeliveryInformation() ? $item->getDeliveryInformation()->getWeight() : 0;
             $qty = $item->getQuantity();
             $itemPrice = $item->getPrice() ? $item->getPrice()->getUnitPrice() : 0;
             $discountedPrice = $itemPrice; // For now, we're not handling discounts separately
-            $currency = "USD"; // TODO Default, should be replaced with actual currency
+            $currency = $context->getCurrency()->getIsoCode();
 
             $formattedItem = new Item();
             $formattedItem->id = $id;

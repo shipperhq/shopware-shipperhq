@@ -23,6 +23,15 @@ use SHQ\RateProvider\Handlers\DatabaseHandler;
 
 class SHQRateProvider extends Plugin
 {
+    /**
+     * Allows Shopware to install your Composer deps on plugin install/update
+     *
+     * @return bool
+     */
+    public function executeComposerCommands(): bool
+    {
+        return true;
+    }
     public function boot(): void
     {
         parent::boot();
