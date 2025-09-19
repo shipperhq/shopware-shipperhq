@@ -20,7 +20,7 @@
     <services>
       <!-- Rate Cache Services -->
       <service id="SHQ\RateProvider\Feature\Checkout\Service\SessionRateStorage">
-        <argument type="service" id="session.factory"/>
+        <argument type="service" id="request_stack"/>
       </service>
 
       <service id="SHQ\RateProvider\Feature\Checkout\Service\RateCacheKeyGenerator">

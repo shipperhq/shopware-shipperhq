@@ -69,8 +69,10 @@ class ShippingRateCache
         }
 
         $this->logger->debug('No cached rates found for key: ' . $cacheKey);
-        $rates = $this->rateProvider->getBatchRates($cart, $context);
-        $this->sessionRateStorage->set($cacheKey, $rates);
+        $rates = $this->rateProvider->getBatchRates($cart, $context) ?? [];
+        if (!empty($rates)) {
+            $this->sessionRateStorage->set($cacheKey, $rates);
+        }
 
         return $rates;
     }

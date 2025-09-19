@@ -11,22 +11,33 @@
 
 namespace SHQ\RateProvider\Feature\Checkout\Service;
 
-use Symfony\Component\HttpFoundation\Session\SessionFactoryInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
 class SessionRateStorage 
 {
     private const CACHE_KEY = 'shipperhq_shipping_rates';
-    private SessionFactoryInterface $sessionFactory;
+    private RequestStack $requestStack;
 
-    public function __construct(SessionFactoryInterface $sessionFactory)
+    public function __construct(RequestStack $requestStack)
     {
-        $this->sessionFactory = $sessionFactory;
+        $this->requestStack = $requestStack;
     }
 
     public function getSession(): SessionInterface
     {
-        return $this->sessionFactory->createSession();
+        $request = $this->requestStack->getCurrentRequest();
+        if ($request && $request->hasSession()) {
+            return $request->getSession();
+        }
+        // Fallback to main request's session if available
+        $mainRequest = $this->requestStack->getMainRequest();
+        if ($mainRequest && $mainRequest->hasSession()) {
+            return $mainRequest->getSession();
+        }
+        // As a last resort, create a new session to avoid null issues
+        // but do NOT save/commit here to prevent cookie resets
+        return new \Symfony\Component\HttpFoundation\Session\Session();
     }
 
     public function has(string $cacheKey): bool
@@ -74,6 +85,6 @@ class SessionRateStorage
             $session->remove($key);
         }
 
-        $session->save();
+        // Do not explicitly save here; the framework manages session persistence
     }
 }
