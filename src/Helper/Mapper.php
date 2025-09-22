@@ -173,7 +173,7 @@ class Mapper
     private function getPluginVersion(): string
     {
         // You may want to store this in your plugin configuration
-        return $this->systemConfig->get('SHQRateProvider.config.version', '1.0.0');
+        return $this->systemConfig->get('SHQRateProvider.config.version', '1.0.1');
     }
 
     /**
