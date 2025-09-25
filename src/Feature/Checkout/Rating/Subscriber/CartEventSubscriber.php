@@ -97,6 +97,7 @@ class CartEventSubscriber implements EventSubscriberInterface
             'skipDeliveryRecalculation' => true,
             'skipProductRecalculation' => true,
             'skipDiscountRecalculation' => true,
+            'skipDeliveryPriceRecalculation' => true // SHQ23-6063 This allows free shipping methods
         ];
 
         $behavior = new CartBehavior($permissions);
