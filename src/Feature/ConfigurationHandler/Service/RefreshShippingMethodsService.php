@@ -128,8 +128,6 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
         $this->logger->info('Updating shipping method: ' . $methodDescription);
         
         $deliveryTimeId = $this->getDeliveryTimeId($context);
-        $salesChannelIds = $this->getActiveSalesChannelIds($context);
-        $availabilityRuleId = $this->getAvailabilityRuleId($context);
         $tagId = $this->getShipperHQTagId($context);
         
         $data = [
@@ -147,16 +145,12 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
             ],
             'tags' => [
                 ['id' => $tagId]
-            ],
-            'availabilityRuleId' => $availabilityRuleId,
-            'salesChannels' => $salesChannelIds
+            ]
         ];
 
         $this->logger->info('Updating shipping method with data: ', [
             'method_id' => $id,
-            'name' => $carrierTitleMethodName,
-            'sales_channels' => count($salesChannelIds),
-            'availability_rule_id' => $availabilityRuleId
+            'name' => $carrierTitleMethodName
         ]);
 
         $this->shippingMethodRepository->update([$data], $context);
