@@ -51,5 +51,5 @@ interface RefreshShippingMethodsServiceInterface
     /**
      * Deletes shipping methods that are no longer returned by ShipperHQ
      */
-    public function deleteObsoleteShippingMethods(array $shipperhqMethods, array $activeMethodIds, Context $context): void;
+    public function deactivateObsoleteShippingMethods(array $shipperhqMethods, array $activeMethodIds, Context $context): void;
 } 
