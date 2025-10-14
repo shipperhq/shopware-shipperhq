@@ -338,8 +338,8 @@ class ShipperHQRateProvider
             $customFields = $method->getCustomFields() ?? [];
             $methodCarrierCode = $customFields['shipperhq_carrier_code'] ?? '';
             
-            // If we have a carrier code match but no method code, use the first method
-            if ($methodCarrierCode === $carrierCode && empty($methodMethodCode)) {
+            // If we have a carrier code match but the rate has no method code, use the first method
+            if ($methodCarrierCode === $carrierCode && empty($methodCode)) {
                 return $method->getId();
             }
         }
