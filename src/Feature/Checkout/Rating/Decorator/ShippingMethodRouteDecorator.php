@@ -117,18 +117,27 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
         $rates = $this->rateCache->getRates($cart, $context);
         $updates = [];
 
+        // If we couldn't fetch rates, do not filter anything to avoid blocking selection
+        if (empty($rates)) {
+            $this->logger->warning('SHIPPERHQ: No rates available; skipping filtering of shipping methods');
+            return;
+        }
+
         foreach ($shippingMethods as $key => $shippingMethod) {
             $rateExists = isset($rates[$shippingMethod->getId()]);
             $customFields = $shippingMethod->getCustomFields();
 
-            if (!$rateExists) {
-                $this->logger->info('SHIPPERHQ: Removing shipping method', [
-                    'method_id' => $shippingMethod->getId(),
-                    'method_name' => $shippingMethod->getName()
-                ]);
-                $shippingMethods->remove($key);
-                $removedCount++;
-            } else {
+            if ($this->isShipperHQShippingMethod($shippingMethod)) {
+                if (!$rateExists) {
+                    $this->logger->info('SHIPPERHQ: Removing ShipperHQ shipping method without rate', [
+                        'method_id' => $shippingMethod->getId(),
+                        'method_name' => $shippingMethod->getName()
+                    ]);
+                    $shippingMethods->remove($key);
+                    $removedCount++;
+                    continue;
+                }
+
                 $customFields = $shippingMethod->getCustomFields() ?? [];
                 $customFields['shipperhq_rate'] = $rates[$shippingMethod->getId()];
                 $customFields['shipperhq_delivery_date'] = $rates[$shippingMethod->getId()]['delivery_date'];
