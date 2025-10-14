@@ -12,6 +12,7 @@
 namespace SHQ\RateProvider\Feature\Checkout\Rating\Decorator;
 
 use Psr\Log\LoggerInterface;
+use Shopware\Core\Checkout\Cart\CartBehavior;
 use Shopware\Core\Checkout\Cart\Cart;
 use Shopware\Core\Checkout\Cart\Delivery\DeliveryCalculator;
 use Shopware\Core\Checkout\Cart\SalesChannel\CartService;
@@ -101,6 +102,16 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
                 'cart_id' => $cart ? $cart->getToken() : 'no_cart',
                 'line_items_count' => $cart ? $cart->getLineItems()->count() : 0
             ]);
+            if ($cart !== null) {
+                $permissions = [
+                    'skipPromotion' => true,
+                    'skipDeliveryRecalculation' => true,
+                    'skipProductRecalculation' => true,
+                    'skipDiscountRecalculation' => true,
+                    'skipDeliveryPriceRecalculation' => true
+                ];
+                $cart->setBehavior(new CartBehavior($permissions));
+            }
             return $cart;
         } catch (\Exception $e) {
             $this->logger->error('SHIPPERHQ: Error getting cart from CartService', [
