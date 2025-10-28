@@ -13,7 +13,7 @@
             </div>
             {% if shipping.customFields.shipperhq_delivery_date %}
                 <div class="shipping-method-delivery-date">
-                    Estimated Delivery: {{ shipping.customFields.shipperhq_delivery_date|date }}
+                    Estimated Delivery: {{ shipping.customFields.shipperhq_delivery_date|date('F j') }}
                 </div>
             {% endif %}
         {% endif %}
