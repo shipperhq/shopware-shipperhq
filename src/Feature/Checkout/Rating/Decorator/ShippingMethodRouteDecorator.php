@@ -12,6 +12,7 @@
 namespace SHQ\RateProvider\Feature\Checkout\Rating\Decorator;
 
 use Psr\Log\LoggerInterface;
+use Shopware\Core\Checkout\Cart\CartBehavior;
 use Shopware\Core\Checkout\Cart\Cart;
 use Shopware\Core\Checkout\Cart\Delivery\DeliveryCalculator;
 use Shopware\Core\Checkout\Cart\SalesChannel\CartService;
@@ -101,6 +102,16 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
                 'cart_id' => $cart ? $cart->getToken() : 'no_cart',
                 'line_items_count' => $cart ? $cart->getLineItems()->count() : 0
             ]);
+            if ($cart !== null) {
+                $permissions = [
+                    'skipPromotion' => true,
+                    'skipDeliveryRecalculation' => true,
+                    'skipProductRecalculation' => true,
+                    'skipDiscountRecalculation' => true,
+                    'skipDeliveryPriceRecalculation' => true
+                ];
+                $cart->setBehavior(new CartBehavior($permissions));
+            }
             return $cart;
         } catch (\Exception $e) {
             $this->logger->error('SHIPPERHQ: Error getting cart from CartService', [
@@ -117,18 +128,27 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
         $rates = $this->rateCache->getRates($cart, $context);
         $updates = [];
 
+        // If we couldn't fetch rates, do not filter anything to avoid blocking selection
+        if (empty($rates)) {
+            $this->logger->warning('SHIPPERHQ: No rates available; skipping filtering of shipping methods');
+            return;
+        }
+
         foreach ($shippingMethods as $key => $shippingMethod) {
             $rateExists = isset($rates[$shippingMethod->getId()]);
             $customFields = $shippingMethod->getCustomFields();
 
-            if (!$rateExists) {
-                $this->logger->info('SHIPPERHQ: Removing shipping method', [
-                    'method_id' => $shippingMethod->getId(),
-                    'method_name' => $shippingMethod->getName()
-                ]);
-                $shippingMethods->remove($key);
-                $removedCount++;
-            } else {
+            if ($this->isShipperHQShippingMethod($shippingMethod)) {
+                if (!$rateExists) {
+                    $this->logger->info('SHIPPERHQ: Removing ShipperHQ shipping method without rate', [
+                        'method_id' => $shippingMethod->getId(),
+                        'method_name' => $shippingMethod->getName()
+                    ]);
+                    $shippingMethods->remove($key);
+                    $removedCount++;
+                    continue;
+                }
+
                 $customFields = $shippingMethod->getCustomFields() ?? [];
                 $customFields['shipperhq_rate'] = $rates[$shippingMethod->getId()];
                 $customFields['shipperhq_delivery_date'] = $rates[$shippingMethod->getId()]['delivery_date'];

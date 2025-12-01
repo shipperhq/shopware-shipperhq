@@ -1,7 +1,7 @@
 {
     "name": "shipperhq/shipping-rates",
     "description": "ShipperHQ shipping rates calculator for Shopware",
-    "version": "1.0.0",
+    "version": "1.0.5",
     "type": "shopware-platform-plugin",
     "license": "MIT",
     "authors": [
@@ -29,6 +29,10 @@
         "shipperhq/library-shipper": "^20.19.1",
         "guzzlehttp/guzzle": "^7.0"
     },
+    "require-dev": {
+        "phpunit/phpunit": "^10.1",
+        "symfony/phpunit-bridge": "^6.0"
+    },
     "extra": {
         "shopware-plugin-class": "SHQ\\RateProvider\\SHQRateProvider",
         "plugin-icon": "src/Resources/config/plugin.png",
@@ -55,6 +59,11 @@
             "SHQ\\RateProvider\\": "src/",
             "ShipperHQ\\WS\\": "vendor/shipperhq/library-ws/src/",
             "ShipperHQ\\Lib\\": "vendor/shipperhq/library-shipper/src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "SHQ\\RateProvider\\Tests\\": "tests/"
         }
     },
     "config": {

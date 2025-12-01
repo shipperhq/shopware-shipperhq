@@ -2,6 +2,7 @@
 namespace SHQ\RateProvider\Feature\Checkout\Rating\Decorator;
 
 use Psr\Log\LoggerInterface;
+use Shopware\Core\Checkout\Cart\CartBehavior;
 use Shopware\Core\Checkout\Cart\SalesChannel\CartService;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Shopware\Storefront\Page\Checkout\Offcanvas\OffcanvasCartPage;
@@ -32,6 +33,16 @@ class OffcanvasCartPageLoaderDecorator extends OffcanvasCartPageLoader
     {
         $page = $this->decorated->load($request, $salesChannelContext);
         $cart = $page->getCart();
+        if ($cart !== null) {
+            $permissions = [
+                'skipPromotion' => true,
+                'skipDeliveryRecalculation' => true,
+                'skipProductRecalculation' => true,
+                'skipDiscountRecalculation' => true,
+                'skipDeliveryPriceRecalculation' => true
+            ];
+            $cart->setBehavior(new CartBehavior($permissions));
+        }
         $shippingMethods = $page->getShippingMethods();
         $rates = $this->rateCache->getRates($cart, $salesChannelContext);
         $removedCount = 0;

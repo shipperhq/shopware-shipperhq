@@ -128,8 +128,6 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
         $this->logger->info('Updating shipping method: ' . $methodDescription);
         
         $deliveryTimeId = $this->getDeliveryTimeId($context);
-        $salesChannelIds = $this->getActiveSalesChannelIds($context);
-        $availabilityRuleId = $this->getAvailabilityRuleId($context);
         $tagId = $this->getShipperHQTagId($context);
         
         $data = [
@@ -147,27 +145,23 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
             ],
             'tags' => [
                 ['id' => $tagId]
-            ],
-            'availabilityRuleId' => $availabilityRuleId,
-            'salesChannels' => $salesChannelIds
+            ]
         ];
 
         $this->logger->info('Updating shipping method with data: ', [
             'method_id' => $id,
-            'name' => $carrierTitleMethodName,
-            'sales_channels' => count($salesChannelIds),
-            'availability_rule_id' => $availabilityRuleId
+            'name' => $carrierTitleMethodName
         ]);
 
         $this->shippingMethodRepository->update([$data], $context);
     }
 
-    public function deleteObsoleteShippingMethods(array $shipperhqMethods, array $activeMethodIds, Context $context): void
+    public function deactivateObsoleteShippingMethods(array $shipperhqMethods, array $activeMethodIds, Context $context): void
     {
         $this->logger->info('Checking for obsolete shipping methods');
         $this->logger->info('Active method IDs: ' . implode(', ', $activeMethodIds));
         
-        $deletedCount = 0;
+        $deactivatedCount = 0;
 
         foreach ($shipperhqMethods as $method) {
             $customFields = $method->getCustomFields();
@@ -175,13 +169,16 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
             $methodName = $method->getName();
 
             if (!in_array($methodId, $activeMethodIds)) {
-                $this->logger->info('Deleting obsolete shipping method: ' . $methodName . ' (ID: ' . $methodId . ')');
-                $this->shippingMethodRepository->delete([['id' => $method->getId()]], $context);
-                $deletedCount++;
+                $this->logger->info('Deactivating obsolete shipping method: ' . $methodName . ' (ID: ' . $methodId . ')');
+                $this->shippingMethodRepository->update([[
+                    'id' => $method->getId(),
+                    'active' => false
+                ]], $context);
+                $deactivatedCount++;
             }
         }
         
-        $this->logger->info('Deleted ' . $deletedCount . ' obsolete shipping methods');
+        $this->logger->info('Deactivated ' . $deactivatedCount . ' obsolete shipping methods');
     }
 
     private function getDeliveryTimeId(Context $context): ?string
