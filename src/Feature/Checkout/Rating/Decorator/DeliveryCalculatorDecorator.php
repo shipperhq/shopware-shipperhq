@@ -12,6 +12,7 @@
 namespace SHQ\RateProvider\Feature\Checkout\Rating\Decorator;
 
 use Psr\Log\LoggerInterface;
+use Shopware\Core\Checkout\Cart\CartBehavior;
 use Shopware\Core\Checkout\Cart\Cart;
 use Shopware\Core\Checkout\Cart\Delivery\DeliveryCalculator;
 use Shopware\Core\Checkout\Cart\Delivery\Struct\Delivery;
@@ -40,6 +41,14 @@ class DeliveryCalculatorDecorator extends DeliveryCalculator
 
     public function calculate(CartDataCollection $data, Cart $cart, DeliveryCollection $deliveries, SalesChannelContext $context): void
     {
+        $permissions = [
+            'skipPromotion' => true,
+            'skipDeliveryRecalculation' => true,
+            'skipProductRecalculation' => true,
+            'skipDiscountRecalculation' => true,
+            'skipDeliveryPriceRecalculation' => true
+        ];
+        $cart->setBehavior(new CartBehavior($permissions));
 
         foreach ($deliveries as $delivery) {
             if ($this->isShipperHQShippingMethod($delivery->getShippingMethod())) {

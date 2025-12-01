@@ -25,6 +25,12 @@
             <tag name="kernel.event_subscriber"/>
         </service>
 
+        <service id="SHQ\RateProvider\Feature\Checkout\Rating\Subscriber\ShippingMethodRouteSubscriber">
+            <argument type="service" id="SHQ\RateProvider\Feature\Checkout\Service\RateCacheKeyGenerator"/>
+            <argument type="service" id="Shopware\Core\Checkout\Cart\SalesChannel\CartService"/>
+            <tag name="kernel.event_subscriber"/>
+        </service>
+
         <service id="SHQ\RateProvider\Feature\Checkout\Rating\Decorator\DeliveryCalculatorDecorator" decorates="Shopware\Core\Checkout\Cart\Delivery\DeliveryCalculator">
             <argument type="service" id="SHQ\RateProvider\Feature\Checkout\Rating\Decorator\DeliveryCalculatorDecorator.inner"/>
             <argument type="service" id="Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator"/>
@@ -36,7 +42,7 @@
 
         <service id="SHQ\RateProvider\Feature\Checkout\Rating\Decorator\ShippingMethodRouteDecorator"
         decorates="Shopware\Core\Checkout\Shipping\SalesChannel\ShippingMethodRoute">
-            <argument type="service" id=".inner"/>
+            <argument type="service" id="SHQ\RateProvider\Feature\Checkout\Rating\Decorator\ShippingMethodRouteDecorator.inner"/>
             <argument type="service" id="Shopware\Core\Checkout\Cart\Delivery\DeliveryCalculator"/>
             <argument type="service" id="logger"/>
             <argument type="service" id="request_stack"/>

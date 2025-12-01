@@ -61,14 +61,14 @@ class ShippingRateCache
     public function getRates(Cart $cart, SalesChannelContext $context): array
     {
         $cacheKey = $this->rateCacheKeyGenerator->generateKey($cart, $context);
-        $cachedRates = $this->sessionRateStorage->get($cacheKey);
+        $cachedData = $this->sessionRateStorage->getCachedData($cacheKey);
 
-        if (!empty($cachedRates)) {
+        if (!empty($cachedData['rates']) && $this->isCacheValid($cachedData)) {
             $this->logger->debug('Using cached rates for key: ' . $cacheKey);
-            return $cachedRates;
+            return $cachedData['rates'];
         }
 
-        $this->logger->debug('No cached rates found for key: ' . $cacheKey);
+        $this->logger->debug('No cached rates found or cache expired for key: ' . $cacheKey);
         $rates = $this->rateProvider->getBatchRates($cart, $context) ?? [];
         if (!empty($rates)) {
             $this->sessionRateStorage->set($cacheKey, $rates);
@@ -113,7 +113,7 @@ class ShippingRateCache
             return false;
         }
 
-        $cachedData = $this->sessionRateStorage->get($cacheKey);
+        $cachedData = $this->sessionRateStorage->getCachedData($cacheKey);
         return $this->isCacheValid($cachedData) && !empty($cachedData['rates']);
     }
 

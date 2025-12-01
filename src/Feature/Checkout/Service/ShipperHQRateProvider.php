@@ -12,6 +12,9 @@
 namespace SHQ\RateProvider\Feature\Checkout\Service;
 
 use Psr\Log\LoggerInterface;
+use ShipperHQ\WS\Rate\Request\RateRequest;
+use ShipperHQ\WS\Rate\Response\RateResponse;
+use ShipperHQ\WS\Rate\Response\ShippingRate;
 use Shopware\Core\Checkout\Cart\Cart;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
@@ -42,7 +45,7 @@ class ShipperHQRateProvider
     {
         try {
             $apiKey = $this->systemConfig->get('SHQRateProvider.config.apiKey');
-            
+
             if (!$apiKey) {
                 $this->logger->error('ShipperHQ API key not configured');
                 return null;
@@ -55,8 +58,10 @@ class ShipperHQRateProvider
                 return [];
             }
 
+            $ignoreEmptyZip = $this->systemConfig->get('SHQRateProvider.config.ignoreEmptyZip');
+
             // Build request data for ShipperHQ
-            $requestData = $this->buildRequestData($cart, $salesChannelContext, $shippingMethods);
+            $requestData = $this->buildRequestData($cart, $salesChannelContext, (bool)$ignoreEmptyZip);
             
             // Check if request data is null (invalid address)
             if ($requestData === null) {
@@ -95,18 +100,17 @@ class ShipperHQRateProvider
      * @param Cart $cart
      * @param SalesChannelContext $context
      * @param array $shippingMethods
-     * @return \ShipperHQ\WS\Rate\Request\RateRequest|null
+     * @param bool $ignoreEmptyZip
+     * @return RateRequest|null
      */
-    private function buildRequestData(Cart $cart, SalesChannelContext $context, array $shippingMethods): ?\ShipperHQ\WS\Rate\Request\RateRequest
+    private function buildRequestData(Cart $cart, SalesChannelContext $context, bool $ignoreEmptyZip): ?RateRequest
     {
-        if (!$this->is_valid_address($context)) {
+        if (!$this->isValidAddress($context, $ignoreEmptyZip)) {
             return null;
         }
 
         // Use the mapper to create a properly formatted request
-        $request = $this->mapper->createRequest($cart, $context);
-        
-        return $request;
+        return $this->mapper->createRequest($cart, $context);
     }
 
     /**
@@ -168,19 +172,20 @@ class ShipperHQRateProvider
      * Check if the address is valid for shipping rate calculation
      *
      * @param SalesChannelContext $context The sales channel context containing customer and address information
+     * @param bool $ignoreEmptyZip Whether to invalidate when destination fields are empty
      * @return bool Whether the address is valid
      */
-    private function is_valid_address(SalesChannelContext $context): bool
+    private function isValidAddress(SalesChannelContext $context, bool $ignoreEmptyZip): bool
     {
-        $valid_address = true;
-        $reason = '';
+        $validAddress = true;
 
         $customer = $context->getCustomer();
         $shippingAddress = $customer ? $customer->getActiveShippingAddress() : null;
         
-        $destinationCountry = $shippingAddress && $shippingAddress->getCountry() ? $shippingAddress->getCountry()->getIso() : '';
-        $destinationState = $shippingAddress && $shippingAddress->getCountryState() ? $shippingAddress->getCountryState()->getShortCode() : '';
-        $destinationPostcode = $shippingAddress ? $shippingAddress->getZipcode() : '';
+        $countryEntity = $shippingAddress ? $shippingAddress->getCountry() : null;
+        $destinationCountry = $countryEntity ? $countryEntity->getIso() : null;
+        $destinationState = $shippingAddress && $shippingAddress->getCountryState() ? $shippingAddress->getCountryState()->getShortCode() : null;
+        $destinationPostcode = $shippingAddress ? $shippingAddress->getZipcode() : null;
 
         $this->logger->info('SHIPPERHQ: Validating shipping address', [
             'has_customer' => $customer !== null,
@@ -190,19 +195,39 @@ class ShipperHQRateProvider
             'postcode' => $destinationPostcode
         ]);
 
-        // Always return true to allow API calls even without an address
-        // This will let ShipperHQ handle the validation on their end
-        return true;
+        // If destination fields are missing and ignoreEmptyZip is true, mark invalid and return immediately
+        if ($ignoreEmptyZip === true) {
+            $this->logger->debug('SHIPPERHQ: Ignore Empty Zip is Set to True', []);
+
+            // Certain countries don't require postal codes E.g.: Ireland
+            $postalCodeRequired = $countryEntity ? $countryEntity->getPostalCodeRequired() : true;
+
+            $missingCountry = ($destinationCountry === null || $destinationCountry === '');
+            $missingState = ($destinationState === null || $destinationState === '');
+            $missingPostcode = ($destinationPostcode === null || $destinationPostcode === '') && $postalCodeRequired;
+
+            if ($missingCountry || $missingState || $missingPostcode) {
+                $validAddress = false;
+                $this->logger->info('SHIPPERHQ: Address invalid due to missing destination fields with ignoreEmptyZip enabled', [
+                    'country' => $destinationCountry,
+                    'state' => $destinationState,
+                    'postcode' => $destinationPostcode,
+                    'postalCodeRequired' => $postalCodeRequired
+                ]);
+            }
+        }
+
+        return $validAddress;
     }
 
     /**
      * Process the rates response from the API
      *
-     * @param \ShipperHQ\WS\Rate\Response\RateResponse $response
+     * @param RateResponse $response
      * @param array $shippingMethods
      * @return array
      */
-    private function processRatesResponse(\ShipperHQ\WS\Rate\Response\RateResponse $response, array $shippingMethods): array
+    private function processRatesResponse(RateResponse $response, array $shippingMethods): array
     {
         $rates = [];
         
@@ -307,11 +332,11 @@ class ShipperHQRateProvider
     /**
      * Map a ShipperHQ carrier/method to a Shopware shipping method ID
      *
-     * @param \ShipperHQ\WS\Rate\Response\ShippingRate $rate
+     * @param ShippingRate $rate
      * @param array $shippingMethods
      * @return string|null
      */
-    private function mapCarrierMethodToShopwareId(\ShipperHQ\WS\Rate\Response\ShippingRate $rate, array $shippingMethods): ?string
+    private function mapCarrierMethodToShopwareId(ShippingRate $rate, array $shippingMethods): ?string
     {
         $carrierCode = $rate->getCarrierCode();
         $methodCode = $rate->getMethodCode();
@@ -338,8 +363,8 @@ class ShipperHQRateProvider
             $customFields = $method->getCustomFields() ?? [];
             $methodCarrierCode = $customFields['shipperhq_carrier_code'] ?? '';
             
-            // If we have a carrier code match but no method code, use the first method
-            if ($methodCarrierCode === $carrierCode && empty($methodMethodCode)) {
+            // If we have a carrier code match but the rate has no method code, use the first method
+            if ($methodCarrierCode === $carrierCode && empty($methodCode)) {
                 return $method->getId();
             }
         }

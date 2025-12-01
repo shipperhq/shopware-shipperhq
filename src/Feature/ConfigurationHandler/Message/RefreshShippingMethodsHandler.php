@@ -94,7 +94,7 @@ class RefreshShippingMethodsHandler
         }
 
         // 4. Delete obsolete shipping methods
-        $this->refreshShippingMethodsService->deleteObsoleteShippingMethods(
+        $this->refreshShippingMethodsService->deactivateObsoleteShippingMethods(
             array_values($existingMethodsById),
             $activeMethodIds,
             $context

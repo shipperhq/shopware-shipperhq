@@ -1,5 +1,8 @@
 
 vendor/
+composer.lock
+account.json
+src/Resources/public/
 
 # nix devenv
 .direnv/

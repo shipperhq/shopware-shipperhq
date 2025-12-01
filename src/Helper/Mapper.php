@@ -84,10 +84,11 @@ class Mapper
         $shipperHQRequest->destination = $this->getDestination($context);
         $shipperHQRequest->customerDetails = $this->getCustomerGroupDetails($context);
         $shipperHQRequest->cartType = $this->getCartType();
+        $shipperHQRequest->validateAddress = true;
 
         // NOTE: Does this inside the api client call on shopware - could move here if required
-       // $shipperHQRequest->siteDetails = $this->getSiteDetails();
-       // $shipperHQRequest->credentials = $this->getCredentials();
+        // $shipperHQRequest->siteDetails = $this->getSiteDetails();
+        // $shipperHQRequest->credentials = $this->getCredentials();
 
         return $shipperHQRequest;
     }
@@ -173,7 +174,7 @@ class Mapper
     private function getPluginVersion(): string
     {
         // You may want to store this in your plugin configuration
-        return $this->systemConfig->get('SHQRateProvider.config.version', '1.0.0');
+        return $this->systemConfig->get('SHQRateProvider.config.version', '1.0.1');
     }
 
     /**

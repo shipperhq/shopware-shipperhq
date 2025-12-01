@@ -96,7 +96,7 @@ class RefreshShippingMethodsUseCase
             }
             
             // 4. Delete shipping methods that are no longer returned by ShipperHQ
-            $this->refreshShippingMethodsService->deleteObsoleteShippingMethods($shipperhqMethods, $activeMethodIds, $context);
+            $this->refreshShippingMethodsService->deactivateObsoleteShippingMethods($shipperhqMethods, $activeMethodIds, $context);
 
             $success['success'] = true;
             $success['methods'] = $newAllowedMethods;
