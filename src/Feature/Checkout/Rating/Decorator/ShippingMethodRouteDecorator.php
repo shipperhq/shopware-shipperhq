@@ -54,7 +54,7 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
 
     private function logRequestDetails(Request $request, Criteria $criteria): void
     {
-        $this->logger->info('SHIPPERHQ: ShippingMethodRouteDecorator::load called', [
+        $this->logger->debug('SHIPPERHQ: ShippingMethodRouteDecorator::load called', [
             'request_uri' => $request->getUri(),
             'request_method' => $request->getMethod(),
             'criteria' => $criteria->getFilters(),
@@ -63,7 +63,7 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
 
     private function execute(Request $request, SalesChannelContext $context, Criteria $criteria): ShippingMethodRouteResponse
     {
-        $this->logger->info('SHIPPERHQ: ShippingMethodRouteDecorator::load called');
+        $this->logger->debug('SHIPPERHQ: ShippingMethodRouteDecorator::load called');
 
         $response = $this->decorated->load($request, $context, $criteria);
         $shippingMethods = $response->getShippingMethods();
@@ -82,7 +82,7 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
 
     private function logShippingMethods($shippingMethods): void
     {
-        $this->logger->info('SHIPPERHQ: Got shipping methods from decorated service', [
+        $this->logger->debug('SHIPPERHQ: Got shipping methods from decorated service', [
             'shipping_methods_count' => $shippingMethods->count(),
             'shipping_method_ids' => array_map(function($method) {
                 return [
@@ -97,7 +97,7 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
     {
         try {
             $cart = $this->cartService->getCart($context->getToken(), $context);
-            $this->logger->info('SHIPPERHQ: Cart from CartService', [
+            $this->logger->debug('SHIPPERHQ: Cart from CartService', [
                 'has_cart' => $cart !== null,
                 'cart_id' => $cart ? $cart->getToken() : 'no_cart',
                 'line_items_count' => $cart ? $cart->getLineItems()->count() : 0
@@ -131,16 +131,16 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
         // If we couldn't fetch rates, do not filter anything to avoid blocking selection
         if (empty($rates)) {
             $this->logger->warning('SHIPPERHQ: No rates available; skipping filtering of shipping methods');
-            return;
+            // return; This is wrong. If we return no rates at all and don't filter, we end up showing a load of
+            // invalid rates to the customer. They could potentially check out without paying shipping
         }
 
         foreach ($shippingMethods as $key => $shippingMethod) {
             $rateExists = isset($rates[$shippingMethod->getId()]);
-            $customFields = $shippingMethod->getCustomFields();
 
             if ($this->isShipperHQShippingMethod($shippingMethod)) {
                 if (!$rateExists) {
-                    $this->logger->info('SHIPPERHQ: Removing ShipperHQ shipping method without rate', [
+                    $this->logger->debug('SHIPPERHQ: Removing ShipperHQ shipping method without rate', [
                         'method_id' => $shippingMethod->getId(),
                         'method_name' => $shippingMethod->getName()
                     ]);
@@ -168,7 +168,7 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
             $this->shippingMethodRepository->update($updates, $context->getContext());
         }
 
-        $this->logger->info('SHIPPERHQ: Filtered shipping methods', [
+        $this->logger->debug('SHIPPERHQ: Filtered shipping methods', [
             'filtered_methods_count' => $shippingMethods->count(),
             'removed_methods_count' => $removedCount,
             'updated_methods_count' => count($updates)
