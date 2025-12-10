@@ -52,7 +52,7 @@ class OffcanvasCartPageLoaderDecorator extends OffcanvasCartPageLoader
                 $removedCount++;
             }
         }
-        $this->logger->info('SHIPPERHQ: OffcanvasCartPageLoaderDecorator filtered shipping methods', [
+        $this->logger->debug('SHIPPERHQ: OffcanvasCartPageLoaderDecorator filtered shipping methods', [
             'filtered_methods_count' => $shippingMethods->count(),
             'removed_methods_count' => $removedCount
         ]);

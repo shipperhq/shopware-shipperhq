@@ -17,15 +17,32 @@ use ShipperHQ\WS\Rate\Request\Checkout\Cart as ShipperHQCart;
 use ShipperHQ\WS\Rate\Request\Checkout\Item;
 use ShipperHQ\WS\Rate\Request\CustomerDetails;
 use ShipperHQ\WS\Rate\Request\RateRequest;
+use ShipperHQ\WS\Rate\Response\AV\AddressValidationResponse;
+use ShipperHQ\WS\Rate\Response\Merge\MergedRateResponse;
+use ShipperHQ\WS\Rate\Response\ProductInfo;
+use ShipperHQ\WS\Rate\Response\RateResponse;
+use ShipperHQ\WS\Rate\Response\ResponseSummary;
+use ShipperHQ\WS\Rate\Response\Shipping\Carrier\CarrierGroupDetail;
+use ShipperHQ\WS\Rate\Response\Shipping\CarrierGroupResponse;
+use ShipperHQ\WS\Rate\Response\Shipping\CarrierRatesResponse;
+use ShipperHQ\WS\Rate\Response\ShippingRate;
+use ShipperHQ\WS\Rate\Response\WebServiceError;
 use ShipperHQ\WS\Shared\Address;
 use ShipperHQ\WS\Shared\Credentials;
 use ShipperHQ\WS\Shared\SiteDetails;
 use Shopware\Core\Checkout\Cart\Cart;
 use Shopware\Core\Checkout\Cart\LineItem\LineItem;
+use Shopware\Core\Content\Product\ProductEntity;
+use Shopware\Core\Framework\Adapter\Kernel\KernelFactory;
+use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
+use Shopware\Core\Content\MeasurementSystem\Unit\MeasurementUnitConverter;
+use SHQ\RateProvider\Config\ShipperHQClientConfig;
+use SHQ\RateProvider\SHQRateProvider;
 
 class Mapper
 {
@@ -52,15 +69,28 @@ class Mapper
     private SystemConfigService $systemConfig;
     private LoggerInterface $logger;
     private EntityRepository $productRepository;
+    private ShipperHQClientConfig $shipperHQClientConfig;
+    private string $shopwareVersion;
+    private EntityRepository $pluginRepository;
+    private ?string $pluginVersionCache = null;
+    private MeasurementUnitConverter $measurementUnitConverter;
 
     public function __construct(
         SystemConfigService $systemConfig,
         LoggerInterface $logger,
-        EntityRepository $productRepository
+        EntityRepository $productRepository,
+        ShipperHQClientConfig $shipperHQClientConfig,
+        EntityRepository $pluginRepository,
+        string $shopwareVersion,
+        MeasurementUnitConverter $measurementUnitConverter,
     ) {
         $this->systemConfig = $systemConfig;
         $this->logger = $logger;
         $this->productRepository = $productRepository;
+        $this->shipperHQClientConfig = $shipperHQClientConfig;
+        $this->pluginRepository = $pluginRepository;
+        $this->shopwareVersion = $shopwareVersion;
+        $this->measurementUnitConverter = $measurementUnitConverter;
     }
 
     /**
@@ -87,7 +117,7 @@ class Mapper
         $shipperHQRequest->validateAddress = true;
 
         // NOTE: Does this inside the api client call on shopware - could move here if required
-        // $shipperHQRequest->siteDetails = $this->getSiteDetails();
+        // $shipperHQRequest->√ = $this->getSiteDetails();
         // $shipperHQRequest->credentials = $this->getCredentials();
 
         return $shipperHQRequest;
@@ -100,8 +130,8 @@ class Mapper
     public function getCredentials(): Credentials
     {
         $credentials = new Credentials();
-        $credentials->apiKey = $this->systemConfig->get('SHQRateProvider.config.apiKey');
-        $credentials->password = $this->systemConfig->get('SHQRateProvider.config.password', '');
+        $credentials->apiKey = $this->shipperHQClientConfig->getApiKey();
+        $credentials->password = $this->shipperHQClientConfig->getAuthenticationCode();
         
         return $credentials;
     }
@@ -133,7 +163,7 @@ class Mapper
     {
         $cartDetails = new ShipperHQCart();
         $cartDetails->declaredValue = $cart->getPrice()->getTotalPrice();
-        $cartDetails->items = $this->getFormattedItems($cart->getLineItems()->getElements(), false, $context);
+        $cartDetails->items = $this->getFormattedItems($cart->getLineItems()->getElements(), $context, false,);
         
         return $cartDetails;
     }
@@ -148,7 +178,7 @@ class Mapper
         $siteDetails->ecommerceCart = "Shopware";
         $siteDetails->ecommerceVersion = $this->getShopwareVersion();
         $siteDetails->websiteUrl = $this->systemConfig->get('core.basicInformation.shopUrl');
-        $siteDetails->environmentScope = "LIVE";
+        $siteDetails->environmentScope = "LIVE"; // Only supporting LIVE for now
         $siteDetails->appVersion = $this->getPluginVersion();
         
         return $siteDetails;
@@ -161,31 +191,47 @@ class Mapper
      */
     private function getShopwareVersion(): string
     {
-        return defined('Shopware\Core\Framework\Adapter\Kernel\KernelFactory::SHOPWARE_VERSION') 
-            ? \Shopware\Core\Framework\Adapter\Kernel\KernelFactory::SHOPWARE_VERSION 
-            : '6.0.0';
+        return $this->shopwareVersion;
     }
 
     /**
      * Get plugin version
      *
-     * @return string
+     * @return string|null
      */
-    private function getPluginVersion(): string
+    private function getPluginVersion(): ?string
     {
-        // You may want to store this in your plugin configuration
-        return $this->systemConfig->get('SHQRateProvider.config.version', '1.0.1');
+        if ($this->pluginVersionCache !== null) {
+            return $this->pluginVersionCache;
+        }
+
+        try {
+            $criteria = new Criteria();
+            $criteria->addFilter(new EqualsFilter('baseClass', SHQRateProvider::class));
+            $plugin = $this->pluginRepository->search($criteria, Context::createDefaultContext())->first();
+            $versionFromPlugin = $plugin ? (string)($plugin->getVersion() ?? '') : '';
+            if ($versionFromPlugin !== '') {
+                $this->pluginVersionCache = $versionFromPlugin;
+                return $this->pluginVersionCache;
+            }
+        } catch (\Throwable $e) {
+            $this->logger->debug('SHIPPERHQ: Plugin repository version lookup failed; will fallback', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return null;
     }
 
     /**
      * Get formatted items for ShipperHQ
      *
      * @param array $items
-     * @param bool $useChild
      * @param SalesChannelContext $context
+     * @param bool $useChild
      * @return array
      */
-    private function getFormattedItems(array $items, bool $useChild = false, SalesChannelContext $context): array
+    private function getFormattedItems(array $items, SalesChannelContext $context, bool $useChild = false): array
     {
         $formattedItems = [];
         $counter = 0;
@@ -197,7 +243,7 @@ class Mapper
 
             $counter++;
             $productId = $item->getReferencedId();
-            $product = $this->getProduct($productId);
+            $product = $this->getProduct($productId, $context);
             
             if (!$product) {
                 continue;
@@ -235,7 +281,7 @@ class Mapper
             $formattedItem->discountedStorePrice = $discountedPrice;
             $formattedItem->discountedTaxInclBasePrice = $discountedPrice;
             $formattedItem->discountedTaxInclStorePrice = $discountedPrice;
-            $formattedItem->attributes = $this->populateAttributes($product);
+            $formattedItem->attributes = $this->populateAttributes($product, $context);
             $formattedItem->baseCurrency = $currency;
             $formattedItem->packageCurrency = $currency;
             $formattedItem->storeBaseCurrency = $currency;
@@ -257,14 +303,15 @@ class Mapper
      * Get product entity by ID
      *
      * @param string $productId
-     * @return \Shopware\Core\Content\Product\ProductEntity|null
+     * @param SalesChannelContext $salesChannelContext
+     * @return ProductEntity|null
      */
-    private function getProduct(string $productId): ?\Shopware\Core\Content\Product\ProductEntity
+    private function getProduct(string $productId, SalesChannelContext $salesChannelContext): ?ProductEntity
     {
         $criteria = new Criteria([$productId]);
         $criteria->addAssociation('customFields');
         
-        return $this->productRepository->search($criteria, \Shopware\Core\Framework\Context::createDefaultContext())->first();
+        return $this->productRepository->search($criteria, $salesChannelContext->getContext())->first();
     }
 
     /**
@@ -301,10 +348,11 @@ class Mapper
     /**
      * Populate product attributes for ShipperHQ
      *
-     * @param \Shopware\Core\Content\Product\ProductEntity $product
+     * @param ProductEntity $product
+     * @param SalesChannelContext $context
      * @return array
      */
-    protected function populateAttributes(\Shopware\Core\Content\Product\ProductEntity $product): array
+    protected function populateAttributes(ProductEntity $product, SalesChannelContext $context): array
     {
         $attributes = [];
         
@@ -313,6 +361,10 @@ class Mapper
             $value = $this->getProductAttribute($product, $attributeName);
             
             if ($value !== null) {
+                // Convert dimensions from storage unit (mm) to configured unit
+                if (in_array($attributeName, ['height', 'width', 'length'], true)) {
+                    $value = $this->convertLengthValue((float) $value, $context);
+                }
                 $attributes[] = [
                     'name' => $attributeName,
                     'value' => $value
@@ -341,13 +393,31 @@ class Mapper
     }
 
     /**
+     * Convert a length value from Shopware's storage unit (mm) to the configured unit.
+     */
+    private function convertLengthValue(float $value, SalesChannelContext $context): float
+    {
+        try {
+            $targetUnit = $context->getSalesChannel()->getMeasurementUnits()->getUnit('length');
+            $converted = $this->measurementUnitConverter->convert($value, 'mm', $targetUnit);
+            return $converted->value;
+        } catch (\Throwable $e) {
+            // On any error, fall back to original value and log at debug level
+            $this->logger->debug('SHIPPERHQ: Length conversion failed; using original value', [
+                'error' => $e->getMessage(),
+            ]);
+            return $value;
+        }
+    }
+
+    /**
      * Get product attribute value
      *
-     * @param \Shopware\Core\Content\Product\ProductEntity $product
+     * @param ProductEntity $product
      * @param string $attributeName
      * @return mixed|null
      */
-    private function getProductAttribute(\Shopware\Core\Content\Product\ProductEntity $product, string $attributeName)
+    private function getProductAttribute(ProductEntity $product, string $attributeName)
     {
         // First check if it's a standard product property
         $getterMethod = 'get' . ucfirst($attributeName);
@@ -360,6 +430,20 @@ class Mapper
         if ($customFields && isset($customFields[$attributeName])) {
             return $customFields[$attributeName];
         }
+
+        // Fallback to parent product custom fields via separate repository call
+        $parentId = $product->getParentId();
+        if ($parentId) {
+            $criteria = new Criteria([$parentId]);
+            // customFields is a field, not an association; no need to addAssociation here
+            $parent = $this->productRepository->search($criteria, Context::createDefaultContext())->first();
+            if ($parent) {
+                $parentCustomFields = $parent->getCustomFields();
+                if ($parentCustomFields && isset($parentCustomFields[$attributeName])) {
+                    return $parentCustomFields[$attributeName];
+                }
+            }
+        }
         
         return null;
     }
@@ -367,10 +451,10 @@ class Mapper
     /**
      * Get warehouse details
      *
-     * @param \Shopware\Core\Content\Product\ProductEntity $product
+     * @param ProductEntity $product
      * @return array|null
      */
-    public function getWarehouseDetails(\Shopware\Core\Content\Product\ProductEntity $product): ?array
+    public function getWarehouseDetails(ProductEntity $product): ?array
     {
         // Implement warehouse details logic if needed
         return null;
@@ -379,10 +463,10 @@ class Mapper
     /**
      * Get pickup location details
      *
-     * @param \Shopware\Core\Content\Product\ProductEntity $product
+     * @param ProductEntity $product
      * @return array|null
      */
-    public function getPickupLocationDetails(\Shopware\Core\Content\Product\ProductEntity $product): ?array
+    public function getPickupLocationDetails(ProductEntity $product): ?array
     {
         // Implement pickup location details logic if needed
         return null;
@@ -401,7 +485,6 @@ class Mapper
         
         if ($customer) {
             $customerGroup->customerGroup = $context->getCurrentCustomerGroup()->getName();
-            $customerGroup->customerGroupId = $context->getCurrentCustomerGroup()->getId();
         }
         
         return $customerGroup;
@@ -421,9 +504,9 @@ class Mapper
      * Maps the API response to a RateResponse object
      * 
      * @param object $result The API response
-     * @return \ShipperHQ\WS\Rate\Response\RateResponse
+     * @return RateResponse
      */
-    public function mapResponse($result): \ShipperHQ\WS\Rate\Response\RateResponse
+    public function mapResponse($result): RateResponse
     {
         // Convert stdClass to array if needed for backward compatibility
         $resultArray = is_object($result) ? json_decode(json_encode($result), true) : $result;
@@ -441,7 +524,7 @@ class Mapper
             ]);
         }
 
-        $rateResponse = new \ShipperHQ\WS\Rate\Response\RateResponse();
+        $rateResponse = new RateResponse();
 
         // Map errors if present
         if (isset($resultArray['errors']) && !empty($resultArray['errors'])) {
@@ -450,7 +533,7 @@ class Mapper
                 if (is_object($error)) {
                     $error = json_decode(json_encode($error), true);
                 }
-                $webServiceError = new \ShipperHQ\WS\Rate\Response\WebServiceError(
+                $webServiceError = new WebServiceError(
                     $error['errorCode'] ?? null,
                     $error['internalErrorMessage'] ?? null,
                     $error['externalErrorMessage'] ?? null
@@ -469,7 +552,7 @@ class Mapper
                 ? json_decode(json_encode($resultArray['responseSummary']), true) 
                 : $resultArray['responseSummary'];
             
-            $summary = new \ShipperHQ\WS\Rate\Response\ResponseSummary(
+            $summary = new ResponseSummary(
                 $summaryData['date'] ?? 0,
                 $summaryData['status'] ?? -1,
                 $summaryData['version'] ?? ''
@@ -501,13 +584,13 @@ class Mapper
                 ? json_decode(json_encode($resultArray['mergedRateResponse']), true) 
                 : $resultArray['mergedRateResponse'];
             
-            $mergedResponse = new \ShipperHQ\WS\Rate\Response\Merge\MergedRateResponse();
+            $mergedResponse = new MergedRateResponse();
             $mergedRates = array_map(function ($rate) {
                 // Convert rate object to array if needed
                 if (is_object($rate)) {
                     $rate = json_decode(json_encode($rate), true);
                 }
-                return new \ShipperHQ\WS\Rate\Response\ShippingRate(
+                return new ShippingRate(
                     $rate['carrierCode'] ?? '',
                     $rate['methodCode'] ?? '',
                     $rate['methodTitle'] ?? '',
@@ -539,12 +622,12 @@ class Mapper
                     'group' => $groupResponse
                 ]);
                 
-                $carrierGroupResponse = new \ShipperHQ\WS\Rate\Response\Shipping\CarrierGroupResponse();
+                $carrierGroupResponse = new CarrierGroupResponse();
                 
                 // Set carrier group detail
                 $carrierGroupId = $groupResponse['carrierGroupId'] ?? '';
                 $carrierGroupName = $groupResponse['carrierGroupName'] ?? '';
-                $carrierGroupDetail = new \ShipperHQ\WS\Rate\Response\Shipping\Carrier\CarrierGroupDetail(
+                $carrierGroupDetail = new CarrierGroupDetail(
                     $carrierGroupId,
                     $carrierGroupName
                 );
@@ -565,7 +648,7 @@ class Mapper
                 
                 // Convert carrier rates to CarrierRatesResponse objects
                 foreach ($carrierRates as $rate) {
-                    $carrierRateResponse = new \ShipperHQ\WS\Rate\Response\Shipping\CarrierRatesResponse();
+                    $carrierRateResponse = new CarrierRatesResponse();
                     $carrierRateResponse->setCarrierCode($rate['carrierCode'] ?? '');
                     $carrierRateResponse->setCarrierTitle($rate['carrierTitle'] ?? '');
                     
@@ -586,7 +669,7 @@ class Mapper
                     // Convert shipping rates to ShippingRate objects
                     $shippingRateObjects = [];
                     foreach ($shippingRates as $shippingRate) {
-                        $shippingRateObject = new \ShipperHQ\WS\Rate\Response\ShippingRate();
+                        $shippingRateObject = new ShippingRate();
                         $shippingRateObject->setCarrierCode($shippingRate['carrierCode'] ?? '');
                         $shippingRateObject->setMethodCode($shippingRate['code'] ?? '');
                         $shippingRateObject->setMethodTitle($shippingRate['name'] ?? '');
@@ -617,7 +700,7 @@ class Mapper
                 // Convert products to ProductInfo objects
                 $productInfos = [];
                 foreach ($products as $product) {
-                    $productInfo = new \ShipperHQ\WS\Rate\Response\ProductInfo();
+                    $productInfo = new ProductInfo();
                     // Set properties on productInfo based on product data
                     // This will depend on the structure of your product data
                     $productInfos[] = $productInfo;
@@ -637,7 +720,7 @@ class Mapper
                 ? json_decode(json_encode($resultArray['addressValidationResponse']), true) 
                 : $resultArray['addressValidationResponse'];
             
-            $validationResponse = new \ShipperHQ\WS\Rate\Response\AV\AddressValidationResponse();
+            $validationResponse = new AddressValidationResponse();
             $validationResponse->setErrors($validationData['errors'] ?? []);
             $validationResponse->setValid($validationData['valid'] ?? false);
             $rateResponse->setAddressValidationResponse($validationResponse);
@@ -647,7 +730,7 @@ class Mapper
         if (isset($resultArray['errors']) && !empty($resultArray['errors'])) {
             // Create a ResponseSummary if not already set
             if (!$rateResponse->getResponseSummary()) {
-                $summary = new \ShipperHQ\WS\Rate\Response\ResponseSummary(
+                $summary = new ResponseSummary(
                     time() * 1000, // Current timestamp in milliseconds
                     -1, // Error status
                     '1.0' // Default version
