@@ -18,8 +18,6 @@ use ShipperHQ\WS\AllowedMethods\AllowedMethodsRequest;
 use ShipperHQ\WS\Client\WebServiceClient;
 use ShipperHQ\WS\Rate\Request\RateRequest;
 use ShipperHQ\WS\Rate\Response\RateResponse;
-use ShipperHQ\WS\Shared\Credentials;
-use ShipperHQ\WS\Shared\SiteDetails;
 use ShipperHQ\WS\WebServiceRequestInterface;
 use SHQ\RateProvider\Config\ShipperHQClientConfig;
 use SHQ\RateProvider\Helper\Mapper;
@@ -43,12 +41,11 @@ class ShipperHQClient
     public function getAllowedMethods(): array
     {        
         $request = new AllowedMethodsRequest();
-        $request->setCredentials($this->buildCredentials());
-        $request->setSiteDetails($this->buildSiteDetails());
+        $request->setCredentials($this->mapper->getCredentials());
+        $request->setSiteDetails($this->mapper->getSiteDetails());
         
         $result = $this->sendRequest($request, $this->config->getAllowedMethodsUrl());
 
-        $resultData = [];
         if (is_object($result['debug'])) {
             $resultData = json_decode(json_encode($result), true);
             $this->logger->error($resultData);
@@ -93,23 +90,6 @@ class ShipperHQClient
         return $allowedShippingMethods;
     }
 
-    private function buildCredentials(): Credentials
-    {
-        $credentials = new Credentials();
-        $credentials->apiKey = $this->config->getApiKey();
-        $credentials->password = $this->config->getAuthenticationCode();
-        return $credentials;
-    }
-
-    private function buildSiteDetails(): SiteDetails
-    {
-        $siteDetails = new SiteDetails();
-        $siteDetails->ecommerceCart = 'Shopware';
-        $siteDetails->ecommerceVersion = '6.6.0';
-        $siteDetails->environmentScope = "LIVE";  // Only supporting LIVE for now
-        return $siteDetails;
-    }
-
     /**
      * Entry point for getting rates for all methods in a single API call
      * 3/11/2025
@@ -119,11 +99,11 @@ class ShipperHQClient
         try {
             // Add credentials and site details if not already set
             if (!$request->getCredentials()) {
-                $request->setCredentials($this->buildCredentials());
+                $request->setCredentials($this->mapper->getCredentials());
             }
             
             if (!$request->getSiteDetails()) {
-                $request->setSiteDetails($this->buildSiteDetails());
+                $request->setSiteDetails($this->mapper->getSiteDetails());
             }
 
             $result = $this->sendRequest($request, $this->config->getRatesUrl());
@@ -194,10 +174,10 @@ class ShipperHQClient
         $elapsed = microtime(true) - $initVal;
         $this->logger->debug('ShipperHQ API request time: ' . $elapsed);
 
-        $this->logger->debug('ShipperHQ request and result', [
-            'request' => $request,
-            'result' => $result
-        ]);
+        // Keep these split into 3 messages, makes it much easier to read in the logs
+        $this->logger->info('ShipperHQ Request', ['request' => $request]);
+        $this->logger->info('ShipperHQ Response', ['response' => $result['result']]);
+        $this->logger->debug('ShipperHQ Debug Response', ['response' => $result['debug']]);
 
         return $result;
     }

@@ -35,7 +35,7 @@ class ShippingMethodLoggerSubscriber implements EventSubscriberInterface
         $deliveries = $cart->getDeliveries();
 
         foreach ($deliveries as $delivery) {
-            $this->logger->info('Processing delivery', [
+            $this->logger->debug('Processing delivery', [
                 'shipping_method_id' => $delivery->getShippingMethod()->getId(),
                 'shipping_method_name' => $delivery->getShippingMethod()->getName(),
                 'shipping_costs' => $delivery->getShippingCosts()->getUnitPrice()

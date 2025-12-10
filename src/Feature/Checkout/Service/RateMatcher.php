@@ -31,7 +31,7 @@ class RateMatcher
 
     public function findRateForMethod(string $shippingMethodId, array $rates, SalesChannelContext $context): ?float
     {
-        $this->logger->info('SHIPPERHQ: Getting rate for method', ['method_id' => $shippingMethodId]);
+        $this->logger->debug('SHIPPERHQ: Getting rate for method', ['method_id' => $shippingMethodId]);
 
         if (isset($rates[$shippingMethodId]) && isset($rates[$shippingMethodId]['price'])) {
             $this->logger->debug('Found rate by shipping method ID', [

@@ -76,6 +76,10 @@
             <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
             <argument type="service" id="logger"/>
             <argument type="service" id="product.repository"/>
+            <argument type="service" id="SHQ\RateProvider\Config\ShipperHQClientConfig"/>
+            <argument type="service" id="plugin.repository"/>
+            <argument>%kernel.shopware_version%</argument>
+            <argument type="service" id="Shopware\Core\Content\MeasurementSystem\Unit\MeasurementUnitConverter"/>
         </service>
 
         <service id="SHQ\RateProvider\Command\ClearShippingRateCacheCommand">
