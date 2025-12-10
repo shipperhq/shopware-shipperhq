@@ -44,6 +44,11 @@ class ShipperHQRateProvider
     public function getBatchRates(Cart $cart, SalesChannelContext $salesChannelContext): ?array
     {
         try {
+            if ($cart->getLineItems()->count() == 0) {
+                $this->logger->debug('No items in cart, aborting getting ShipperHQ rates');
+                return null;
+            }
+
             $apiKey = $this->systemConfig->get('SHQRateProvider.config.apiKey');
 
             if (!$apiKey) {
@@ -72,7 +77,7 @@ class ShipperHQRateProvider
             // Make the API call to ShipperHQ
             $response = $this->apiClient->getRatesForAllMethods($requestData);
             
-            $this->logger->info('SHIPPERHQ: API response', [
+            $this->logger->debug('SHIPPERHQ: API response', [
                 'response' => $response
             ]);
             
@@ -129,7 +134,7 @@ class ShipperHQRateProvider
         
         $shippingMethods = $this->shippingMethodRepository->search($criteria, $context->getContext())->getElements();
         
-        $this->logger->info('SHIPPERHQ: Found all shipping methods', [
+        $this->logger->debug('SHIPPERHQ: Found all shipping methods', [
             'total_methods' => count($shippingMethods),
             'methods' => array_map(function($method) {
                 $customFields = $method->getCustomFields() ?? [];
@@ -150,7 +155,7 @@ class ShipperHQRateProvider
                    isset($customFields['shipperhq_method_code']);
         });
         
-        $this->logger->info('SHIPPERHQ: Filtered ShipperHQ methods', [
+        $this->logger->debug('SHIPPERHQ: Filtered ShipperHQ methods', [
             'total_shipperhq_methods' => count($shipperHQMethods),
             'shipperhq_methods' => array_map(function($method) {
                 $customFields = $method->getCustomFields() ?? [];
@@ -187,7 +192,7 @@ class ShipperHQRateProvider
         $destinationState = $shippingAddress && $shippingAddress->getCountryState() ? $shippingAddress->getCountryState()->getShortCode() : null;
         $destinationPostcode = $shippingAddress ? $shippingAddress->getZipcode() : null;
 
-        $this->logger->info('SHIPPERHQ: Validating shipping address', [
+        $this->logger->debug('SHIPPERHQ: Validating shipping address', [
             'has_customer' => $customer !== null,
             'has_shipping_address' => $shippingAddress !== null,
             'country' => $destinationCountry,
@@ -197,7 +202,7 @@ class ShipperHQRateProvider
 
         // If destination fields are missing and ignoreEmptyZip is true, mark invalid and return immediately
         if ($ignoreEmptyZip === true) {
-            $this->logger->debug('SHIPPERHQ: Ignore Empty Zip is Set to True', []);
+            $this->logger->debug('SHIPPERHQ: Ignore Empty Zip Feature Is Enabled - Method Entry Point', []);
 
             // Certain countries don't require postal codes E.g.: Ireland
             $postalCodeRequired = $countryEntity ? $countryEntity->getPostalCodeRequired() : true;
