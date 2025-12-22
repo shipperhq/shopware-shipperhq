@@ -37,7 +37,20 @@ class ShippingMethodRouteSubscriber implements EventSubscriberInterface
 
     public function shippingMethodRouteCacheKey(ShippingMethodRouteCacheKeyEvent $event): void
     {
-        $context = $event->getSalesChannelContext();
+        // getSalesChannelContext() was added in Shopware 6.7.1.0
+        // For older versions, use getContext() which exists in the base StoreApiRouteCacheKeyEvent class
+        if (method_exists($event, 'getSalesChannelContext')) {
+            $context = $event->getSalesChannelContext();
+        } elseif (method_exists($event, 'getContext')) {
+            $context = $event->getContext();
+        } else {
+            // Fallback: disable caching if we can't get the context
+            if (method_exists($event, 'disableCaching')) {
+                $event->disableCaching();
+            }
+            return;
+        }
+
         $cart = $this->cartService->getCart($context->getToken(), $context);
 
         if (!$cart) {
@@ -48,6 +61,7 @@ class ShippingMethodRouteSubscriber implements EventSubscriberInterface
         $shqCacheKey = $this->rateCacheKeyGenerator->generateKey($cart, $context);
         
         // Add the SHQ cache key to the parts array
+        // This allows proper caching while including SHQ-specific cart data in the key
         $parts = $event->getParts();
         $parts['shq_cache_key'] = $shqCacheKey;
         $event->setParts($parts);
