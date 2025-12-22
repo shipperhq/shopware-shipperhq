@@ -1,0 +1,71 @@
+include:
+  - project: ShipperHQ/DevOps/GitLabTemplates
+    ref: main
+    file: /platform/release.gitlab-ci.yml
+
+stages:
+  - tag
+  - release to GitHub
+  - merge to main
+  - merge to production
+
+# Denote whether to build major, minor or patch release
+major release:
+  stage: tag
+  variables:
+    VERSION_INCREMENT: "major"
+  extends:
+    - .shopware_module_release
+
+minor release:
+  stage: tag
+  variables:
+    VERSION_INCREMENT: "minor"
+  extends:
+    - .shopware_module_release
+
+patch release:
+  stage: tag
+  variables:
+    VERSION_INCREMENT: "patch"
+  extends:
+    - .shopware_module_release
+    
+# Build public release
+build release to GitHub:
+  stage: release to GitHub
+  variables:
+    GITHUB_REPO: "https://github.com/shipperhq/shopware-shipperhq.git"
+  when: on_success
+  needs:
+    - job: major release
+      optional: true
+    - job: minor release
+      optional: true
+    - job: patch release
+      optional: true
+  extends:
+    - .shopware_public_release
+
+# Merge to main
+merge to main branch:
+  stage: merge to main
+  when: on_success
+  needs:
+    - job: major release
+      optional: true
+    - job: minor release
+      optional: true
+    - job: patch release
+      optional: true
+  extends:
+    - .merge_to_main
+
+# Merge to production
+merge to production branch:
+  stage: merge to production
+  when: on_success
+  needs:
+    - job: merge to main branch
+  extends:
+    - .merge_to_prod
