@@ -39,7 +39,6 @@ use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
-use Shopware\Core\Content\MeasurementSystem\Unit\MeasurementUnitConverter;
 use SHQ\RateProvider\Config\ShipperHQClientConfig;
 use SHQ\RateProvider\SHQRateProvider;
 
@@ -72,7 +71,6 @@ class Mapper
     private string $shopwareVersion;
     private EntityRepository $pluginRepository;
     private ?string $pluginVersionCache = null;
-    private MeasurementUnitConverter $measurementUnitConverter;
 
     public function __construct(
         SystemConfigService $systemConfig,
@@ -81,7 +79,6 @@ class Mapper
         ShipperHQClientConfig $shipperHQClientConfig,
         EntityRepository $pluginRepository,
         string $shopwareVersion,
-        MeasurementUnitConverter $measurementUnitConverter,
     ) {
         $this->systemConfig = $systemConfig;
         $this->logger = $logger;
@@ -89,7 +86,6 @@ class Mapper
         $this->shipperHQClientConfig = $shipperHQClientConfig;
         $this->pluginRepository = $pluginRepository;
         $this->shopwareVersion = $shopwareVersion;
-        $this->measurementUnitConverter = $measurementUnitConverter;
     }
 
     /**
@@ -354,6 +350,9 @@ class Mapper
     protected function populateAttributes(ProductEntity $product, SalesChannelContext $context): array
     {
         $attributes = [];
+        // Measurement units feature was added in Shopware 6.7.3.0
+        // Prior to this version it's always mm and KGs so don't convert - Assuming US customers will enter lbs/in
+        $supportsMeasurementUnits = version_compare($this->shopwareVersion, '6.7.3.0', '>=');
         
         // Add standard attributes
         foreach (self::$stdAttributeNames as $attributeName) {
@@ -361,7 +360,7 @@ class Mapper
             
             if ($value !== null) {
                 // Convert dimensions from storage unit (mm) to configured unit
-                if (in_array($attributeName, ['height', 'width', 'length'], true)) {
+                if ($supportsMeasurementUnits && in_array($attributeName, ['height', 'width', 'length'], true)) {
                     $value = $this->convertLengthValue((float) $value, $context);
                 }
                 $attributes[] = [
@@ -398,8 +397,9 @@ class Mapper
     {
         try {
             $targetUnit = $context->getSalesChannel()->getMeasurementUnits()->getUnit('length');
-            $converted = $this->measurementUnitConverter->convert($value, 'mm', $targetUnit);
-            return $converted->value;
+            // Once we remove support for Shopware 6.6 and below, we can use the MeasurementUnitConverter class
+            // $converted = $this->measurementUnitConverter->convert($value, 'mm', $targetUnit);
+            return $this->convertLength($value, 'mm', $targetUnit);
         } catch (\Throwable $e) {
             // On any error, fall back to original value and log at debug level
             $this->logger->debug('SHIPPERHQ: Length conversion failed; using original value', [
@@ -407,6 +407,60 @@ class Mapper
             ]);
             return $value;
         }
+    }
+
+    /**
+     * Convert a length value between units
+     * Replacement for the removed MeasurementUnitConverter class
+     * 
+     * @param float $value The value to convert
+     * @param string $fromUnit The source unit
+     * @param string $toUnit The target unit (or unit object with shortCode property)
+     * @return float The converted value
+     */
+    private function convertLength(float $value, string $fromUnit, $toUnit): float
+    {
+        // Handle case where $toUnit is an object with a shortCode property
+        $toUnitCode = is_object($toUnit) && property_exists($toUnit, 'shortCode') 
+            ? $toUnit->shortCode 
+            : (string) $toUnit;
+
+        // If units are the same, no conversion needed
+        if (strtolower($fromUnit) === strtolower($toUnitCode)) {
+            return $value;
+        }
+
+        // Conversion factors to millimeters (base unit)
+        $toMillimeters = [
+            'mm' => 1.0,
+            'cm' => 10.0,
+            'm' => 1000.0,
+            'in' => 25.4,
+            'inch' => 25.4,
+            'inches' => 25.4,
+            'ft' => 304.8,
+            'foot' => 304.8,
+            'feet' => 304.8,
+        ];
+
+        $fromLower = strtolower($fromUnit);
+        $toLower = strtolower($toUnitCode);
+
+        // Check if both units are supported
+        if (!isset($toMillimeters[$fromLower]) || !isset($toMillimeters[$toLower])) {
+            // Unsupported unit, return original value
+            $this->logger->debug('SHIPPERHQ: Unsupported length unit in conversion', [
+                'from' => $fromUnit,
+                'to' => $toUnitCode,
+            ]);
+            return $value;
+        }
+
+        // Convert from source unit to mm, then from mm to target unit
+        $valueInMm = $value * $toMillimeters[$fromLower];
+        $convertedValue = $valueInMm / $toMillimeters[$toLower];
+
+        return $convertedValue;
     }
 
     /**

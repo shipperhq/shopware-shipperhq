@@ -15,7 +15,7 @@ This Shopware plugin integrates ShipperHQ's rating engine, allowing Shopware sto
 
 ## ✅ Requirements
 
-- 🧱 Shopware **6.5.x** or higher
+- 🧱 Shopware **6.6.10** or higher
 - 🐘 PHP **8.1** or higher
 - 🔐 Valid ShipperHQ API credentials
 
