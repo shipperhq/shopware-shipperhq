@@ -397,7 +397,7 @@ class Mapper
     {
         try {
             $targetUnit = $context->getSalesChannel()->getMeasurementUnits()->getUnit('length');
-            // Once we remove support for Shopware 6.6 and below, we can use the MeasurementUnitConverter class
+            // TODO: Once we remove support for Shopware 6.6 and below, we can use the MeasurementUnitConverter class
             // $converted = $this->measurementUnitConverter->convert($value, 'mm', $targetUnit);
             return $this->convertLength($value, 'mm', $targetUnit);
         } catch (\Throwable $e) {
