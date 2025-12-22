@@ -188,6 +188,7 @@ class ShipperHQRateProvider
         $shippingAddress = $customer ? $customer->getActiveShippingAddress() : null;
         
         $countryEntity = $shippingAddress ? $shippingAddress->getCountry() : null;
+        $stateEntity = $shippingAddress ? $shippingAddress->getCountryState() : null;
         $destinationCountry = $countryEntity ? $countryEntity->getIso() : null;
         $destinationState = $shippingAddress && $shippingAddress->getCountryState() ? $shippingAddress->getCountryState()->getShortCode() : null;
         $destinationPostcode = $shippingAddress ? $shippingAddress->getZipcode() : null;
@@ -206,9 +207,11 @@ class ShipperHQRateProvider
 
             // Certain countries don't require postal codes E.g.: Ireland
             $postalCodeRequired = $countryEntity ? $countryEntity->getPostalCodeRequired() : true;
+            // SHQ23-6644 Some countries don't have the state field - E.g.: Switzerland
+            $stateRequired = $countryEntity ? $countryEntity->getForceStateInRegistration() : true;
 
-            $missingCountry = ($destinationCountry === null || $destinationCountry === '');
-            $missingState = ($destinationState === null || $destinationState === '');
+            $missingCountry =  ($destinationCountry === null || $destinationCountry === '');
+            $missingState =    ($destinationState === null || $destinationState === '') && $stateRequired;
             $missingPostcode = ($destinationPostcode === null || $destinationPostcode === '') && $postalCodeRequired;
 
             if ($missingCountry || $missingState || $missingPostcode) {

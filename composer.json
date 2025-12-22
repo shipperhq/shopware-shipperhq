@@ -1,7 +1,7 @@
 {
     "name": "shipperhq/shipping-rates",
     "description": "ShipperHQ shipping rates calculator for Shopware",
-    "version": "1.0.5",
+    "version": "1.0.7",
     "type": "shopware-platform-plugin",
     "license": "MIT",
     "authors": [
@@ -24,7 +24,7 @@
         }
     ],
     "require": {
-        "shopware/core": "^6.6.0",
+        "shopware/core": "^6.6.10",
         "shipperhq/library-ws": "^20.10.0",
         "shipperhq/library-shipper": "^20.19.1",
         "guzzlehttp/guzzle": "^7.0"
