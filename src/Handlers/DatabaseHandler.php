@@ -14,25 +14,73 @@ namespace SHQ\RateProvider\Handlers;
 use Doctrine\DBAL\Connection;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
-use Shopware\Core\System\SystemConfig\SystemConfigService;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 
 class DatabaseHandler
 {
     private Connection $connection;
-    private SystemConfigService $systemConfigService;
-    private EntityRepository $systemConfigRepository;
+    private EntityRepository $customFieldSetRepository;
+    private EntityRepository $customFieldRepository;
 
     public function __construct(
         Connection $connection,
-        SystemConfigService $systemConfigService,
-        EntityRepository $systemConfigRepository
+        EntityRepository $customFieldSetRepository,
+        EntityRepository $customFieldRepository
     ) {
         $this->connection = $connection;
-        $this->systemConfigService = $systemConfigService;
-        $this->systemConfigRepository = $systemConfigRepository;
+        $this->customFieldSetRepository = $customFieldSetRepository;
+        $this->customFieldRepository = $customFieldRepository;
     }
 
-    public function removeConfiguration(Context $context): void
+    public function removeShipperHQTables(Context $context): void
+    {
+        // Remove custom field sets
+        $this->removeCustomFields($context);
+        
+        // Remove system configuration
+        $this->removeConfiguration();
+    }
+
+    private function removeCustomFields(Context $context): void
+    {
+        // Custom field names defined in CustomFieldService::createCustomFieldSets()
+        $customFieldNames = [
+            'shipperhq_shipping_group',
+            'shipperhq_warehouse',
+            'ship_separately',
+            'shipperhq_dim_group',
+        ];
+        
+        // Delete each custom field
+        foreach ($customFieldNames as $fieldName) {
+            $criteria = new Criteria();
+            $criteria->addFilter(new EqualsFilter('name', $fieldName));
+            
+            $customField = $this->customFieldRepository->search($criteria, $context)->first();
+            
+            if ($customField) {
+                $this->customFieldRepository->delete([
+                    ['id' => $customField->getId()]
+                ], $context);
+            }
+        }
+        
+        // Remove the custom field set
+        // Name is defined in CustomFieldService::createCustomFieldSets()
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('name', 'shipperhq_product'));
+        
+        $customFieldSet = $this->customFieldSetRepository->search($criteria, $context)->first();
+        
+        if ($customFieldSet) {
+            $this->customFieldSetRepository->delete([
+                ['id' => $customFieldSet->getId()]
+            ], $context);
+        }
+    }
+
+    private function removeConfiguration(): void
     {
         // Remove all configuration with the plugin prefix
         $configPrefix = 'SHQRateProvider.config.';
@@ -42,8 +90,5 @@ class DatabaseHandler
             'DELETE FROM system_config WHERE configuration_key LIKE :configPrefix',
             ['configPrefix' => $configPrefix . '%']
         );
-        
-        // Clear config cache
-        $this->systemConfigService->delete($configPrefix);
     }
 }

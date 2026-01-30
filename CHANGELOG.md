@@ -1,5 +1,11 @@
 # Change Log
 
+## [1.1.0](https://gitlab.com/ShipperHQ/Platform/shopware/shopware-shipperhq/tree/1.1.0) (2026-01-30)
+[Full Changelog](https://gitlab.com/ShipperHQ/Platform/shopware/shopware-shipperhq/-/compare/1.0.7...develop)
+ - [SHQ23-6652](https://webshopapps.atlassian.net/browse/SHQ23-6652) Corrected composer translations. Removed dead code. Removed... [\#24](https://gitlab.com/ShipperHQ/Platform/shopware/shopware-shipperhq/-/merge_requests/24) ([wsajosh](https://gitlab.com/wsajosh))
+ - Develop [\#22](https://gitlab.com/ShipperHQ/Platform/shopware/shopware-shipperhq/-/merge_requests/22) ([wsajosh](https://gitlab.com/wsajosh))
+ - Meging develop to main [\#16](https://gitlab.com/ShipperHQ/Platform/shopware/shopware-shipperhq/-/merge_requests/16) ([wsajosh](https://gitlab.com/wsajosh))
+
 ## [1.0.7](https://gitlab.com/ShipperHQ/Platform/shopware/shopware-shipperhq/tree/1.0.7) (2025-12-22)
 [Full Changelog](https://gitlab.com/ShipperHQ/Platform/shopware/shopware-shipperhq/-/compare/1.0.6...develop)
  - [SHQ23-6785](https://webshopapps.atlassian.net/browse/SHQ23-6785) Ensure compatibility with Shopware 6.6.10 [\#21](https://gitlab.com/ShipperHQ/Platform/shopware/shopware-shipperhq/-/merge_requests/21) ([wsajosh](https://gitlab.com/wsajosh))

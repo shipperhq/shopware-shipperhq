@@ -14,7 +14,6 @@ namespace SHQ\RateProvider\Feature\Checkout\Rating\Decorator;
 use Psr\Log\LoggerInterface;
 use Shopware\Core\Checkout\Cart\CartBehavior;
 use Shopware\Core\Checkout\Cart\Cart;
-use Shopware\Core\Checkout\Cart\Delivery\DeliveryCalculator;
 use Shopware\Core\Checkout\Cart\SalesChannel\CartService;
 use Shopware\Core\Checkout\Shipping\SalesChannel\AbstractShippingMethodRoute;
 use Shopware\Core\Checkout\Shipping\SalesChannel\ShippingMethodRouteResponse;
@@ -32,7 +31,6 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
 
     public function __construct(
         private readonly AbstractShippingMethodRoute $decorated,
-        private readonly DeliveryCalculator $deliveryCalculator,
         private readonly LoggerInterface $logger,
         private readonly RequestStack $requestStack,
         private readonly CartService $cartService,
@@ -128,11 +126,10 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
         $rates = $this->rateCache->getRates($cart, $context);
         $updates = [];
 
-        // If we couldn't fetch rates, do not filter anything to avoid blocking selection
+        // We didn't get any rates, but we still filter otherwise we end up showing a load of
+        // invalid rates to the customer; They could potentially check out without paying shipping.
         if (empty($rates)) {
-            $this->logger->warning('SHIPPERHQ: No rates available; skipping filtering of shipping methods');
-            // return; This is wrong. If we return no rates at all and don't filter, we end up showing a load of
-            // invalid rates to the customer. They could potentially check out without paying shipping
+            $this->logger->warning('SHIPPERHQ: No rates available; Filtering shipping methods');
         }
 
         foreach ($shippingMethods as $key => $shippingMethod) {

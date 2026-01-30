@@ -99,10 +99,10 @@ class Mapper
      */
     public function createRequest(Cart $cart, SalesChannelContext $context): ?RateRequest
     {
-        // if (!$this->hasCredentialsEntered()) {
-        //     $this->logger->error('ShipperHQ API credentials not configured');
-        //     return null;
-        // }
+        if (!$this->hasCredentialsEntered()) {
+            $this->logger->error('ShipperHQ API credentials not configured');
+            return null;
+        }
 
         $shipperHQRequest = new RateRequest();
         $shipperHQRequest->cart = $this->getCartDetails($cart, $context);
@@ -110,10 +110,6 @@ class Mapper
         $shipperHQRequest->customerDetails = $this->getCustomerGroupDetails($context);
         $shipperHQRequest->cartType = $this->getCartType();
         $shipperHQRequest->validateAddress = true;
-
-        // NOTE: Does this inside the api client call on shopware - could move here if required
-        // $shipperHQRequest->√ = $this->getSiteDetails();
-        // $shipperHQRequest->credentials = $this->getCredentials();
 
         return $shipperHQRequest;
     }

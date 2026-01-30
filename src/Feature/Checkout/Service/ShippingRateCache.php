@@ -15,40 +15,29 @@ namespace SHQ\RateProvider\Feature\Checkout\Service;
 use Psr\Log\LoggerInterface;
 use Shopware\Core\Checkout\Cart\Cart;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
-use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
 class ShippingRateCache
 {
     private const CACHE_LIFETIME = 300; // 5 minutes in seconds
 
-    private SessionRateStorage $sessionRateStorage;
+    private SessionRateStorage $rateStorage;
     private RateMatcher $rateMatcher;
     private RateCacheKeyGenerator $rateCacheKeyGenerator;
     private ShipperHQRateProvider $rateProvider;
     private LoggerInterface $logger;
 
     public function __construct(
-        SessionRateStorage $sessionRateStorage,
+        SessionRateStorage $rateStorage,
         RateMatcher $rateMatcher,
         RateCacheKeyGenerator $rateCacheKeyGenerator,
         ShipperHQRateProvider $rateProvider,
         LoggerInterface $logger
     ) {
-        $this->sessionRateStorage = $sessionRateStorage;
+        $this->rateStorage = $rateStorage;
         $this->rateMatcher = $rateMatcher;
         $this->rateCacheKeyGenerator = $rateCacheKeyGenerator;
         $this->rateProvider = $rateProvider;
         $this->logger = $logger;
-    }
-
-    /**
-     * Get the session
-     *
-     * @return SessionInterface
-     */
-    private function getSession(): SessionInterface
-    {
-        return $this->sessionRateStorage->getSession();
     }
 
     /**
@@ -61,7 +50,7 @@ class ShippingRateCache
     public function getRates(Cart $cart, SalesChannelContext $context): array
     {
         $cacheKey = $this->rateCacheKeyGenerator->generateKey($cart, $context);
-        $cachedData = $this->sessionRateStorage->getCachedData($cacheKey);
+        $cachedData = $this->rateStorage->getCachedData($cacheKey);
 
         if (!empty($cachedData['rates']) && $this->isCacheValid($cachedData)) {
             $this->logger->debug('Using cached rates for key: ' . $cacheKey);
@@ -71,7 +60,7 @@ class ShippingRateCache
         $this->logger->debug('No cached rates found or cache expired for key: ' . $cacheKey);
         $rates = $this->rateProvider->getBatchRates($cart, $context) ?? [];
         if (!empty($rates)) {
-            $this->sessionRateStorage->set($cacheKey, $rates);
+            $this->rateStorage->set($cacheKey, $rates);
         }
 
         return $rates;
@@ -104,16 +93,16 @@ class ShippingRateCache
      */
     public function clearCache(): void
     {
-        $this->sessionRateStorage->clear();
+        $this->rateStorage->clear();
     }
 
     private function hasValidCachedRates(string $cacheKey): bool
     {
-        if (!$this->sessionRateStorage->has($cacheKey)) {
+        if (!$this->rateStorage->has($cacheKey)) {
             return false;
         }
 
-        $cachedData = $this->sessionRateStorage->getCachedData($cacheKey);
+        $cachedData = $this->rateStorage->getCachedData($cacheKey);
         return $this->isCacheValid($cachedData) && !empty($cachedData['rates']);
     }
 

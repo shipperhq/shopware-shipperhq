@@ -1,7 +1,7 @@
 {
     "name": "shipperhq/shipping-rates",
     "description": "ShipperHQ shipping rates calculator for Shopware",
-    "version": "1.0.7",
+    "version": "1.1.0",
     "type": "shopware-platform-plugin",
     "license": "MIT",
     "authors": [
@@ -42,8 +42,8 @@
             "en-GB": "ShipperHQ Shipping Rates"
         },
         "description": {
-            "de-DE": "Berechnet Versandkosten mit ShipperHQ",
-            "en-GB": "Calculate shipping rates with ShipperHQ"
+            "de-DE": "Integriert ShipperHQ in Ihren Shop für präzise Versandkostenberechnung in Echtzeit. Unterstützt mehrere Versandanbieter, flexible Versandregeln und erweiterte Funktionen.",
+            "en-GB": "Integrates ShipperHQ into your store for accurate real-time shipping rate calculations. Supports multiple carriers, flexible shipping rules, and advanced features."
         },
         "manufacturerLink": {
             "de-DE": "https://shipperhq.com",

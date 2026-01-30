@@ -20,22 +20,32 @@
     </imports>
 
     <services>
+        <!-- Custom logger to log to var/log/ShipperHQ.log -->
+        <service id="shipperhq.logger" class="Monolog\Logger">
+            <argument>shipperhq</argument>
+            <call method="pushHandler">
+                <argument type="service">
+                    <service class="Monolog\Handler\StreamHandler">
+                        <argument>%kernel.logs_dir%/ShipperHQ.log</argument>
+                        <argument>100</argument> <!-- DEBUG level -->
+                    </service>
+                </argument>
+            </call>
+        </service>
+
         <service id="ShipperHQ\WS\Client\WebServiceClient" class="ShipperHQ\WS\Client\WebServiceClient" public="true">
-            <tag name="shopware.service"/>
         </service>
 
         <service id="ShipperHQ\Lib\Helper\Date" class="ShipperHQ\Lib\Helper\Date" public="false">
-            <tag name="shopware.service"/>
         </service>
 
         <service id="ShipperHQ\Lib\Rate\Helper" class="ShipperHQ\Lib\Rate\Helper" public="false">
             <argument type="service" id="ShipperHQ\Lib\Helper\Date"/>
-            <tag name="shopware.service"/>
         </service>
 
         <service id="SHQ\RateProvider\Service\ShippingRateCalculator" public="true">
             <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
-            <argument type="service" id="logger"/>
+            <argument type="service" id="shipperhq.logger"/>
         </service>
 
         <service id="SHQ\RateProvider\Config\ShipperHQClientConfig" public="true">
@@ -44,37 +54,15 @@
 
         <service id="SHQ\RateProvider\Service\ShipperHQClient" public="true">
             <argument type="service" id="SHQ\RateProvider\Config\ShipperHQClientConfig"/>
-            <argument type="service" id="logger"/>
+            <argument type="service" id="shipperhq.logger"/>
             <argument type="service" id="ShipperHQ\WS\Client\WebServiceClient"/>
             <argument type="service" id="ShipperHQ\Lib\Rate\Helper"/>
             <argument type="service" id="SHQ\RateProvider\Helper\Mapper"/>
         </service>
 
-        <!-- Commenting out OverwritePriceCollector as it appears to be unnecessary -->
-        <!--
-        <service id="SHQ\RateProvider\Checkout\Cart\OverwritePriceCollector"> 
-            <argument type="service" id="Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator"/>
-            <tag name="shopware.cart.processor" priority="4500" />
-            <tag name="shopware.cart.collector" priority="4500" />
-        </service>
-        -->
-
-        <!-- Commented out as we're using DeliveryCalculatorDecorator instead -->
-        <!--
-        <service id="SHQ\RateProvider\Subscriber\BatchShippingRateSubscriber">
-            <argument type="service" id="SHQ\RateProvider\Feature\Checkout\Rating\Service\ShippingRateCache"/>
-            <argument type="service" id="monolog.logger.shipperhq"/>
-            <argument type="service" id="shipping_method.repository"/>
-            <argument type="service" id="Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator"/>
-            <argument type="service" id="Shopware\Core\Checkout\Cart\Tax\PercentageTaxRuleBuilder"/>
-            <tag name="kernel.event_subscriber"/>
-        </service>
-        -->
-
-
         <service id="SHQ\RateProvider\Helper\Mapper">
             <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
-            <argument type="service" id="logger"/>
+            <argument type="service" id="shipperhq.logger"/>
             <argument type="service" id="product.repository"/>
             <argument type="service" id="SHQ\RateProvider\Config\ShipperHQClientConfig"/>
             <argument type="service" id="plugin.repository"/>

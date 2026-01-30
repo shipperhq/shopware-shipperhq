@@ -35,46 +35,44 @@ class SHQRateProvider extends Plugin
     public function boot(): void
     {
         parent::boot();
-        
-        // Register vendor autoloader
-        $vendorDir = $this->getPath() . '/vendor';
-        if (file_exists($vendorDir . '/autoload.php')) {
-            require_once $vendorDir . '/autoload.php';
-        }
     }
 
     public function install(InstallContext $installContext): void
     {
-        parent::install($installContext);
-
         $this->createCustomFields($installContext->getContext());
     }
 
     public function update(UpdateContext $updateContext): void
     {
-        parent::update($updateContext);
-
         $this->createCustomFields($updateContext->getContext());
     }
 
     public function uninstall(UninstallContext $uninstallContext): void
     {
         if (!$uninstallContext->keepUserData()) {
-          #  $this->removeAllShipperHQTables();
+            $this->removeAllShipperHQTables($uninstallContext->getContext());
         }
-        parent::uninstall($uninstallContext);
     }
 
     /**
+     * Remove all ShipperHQ data including custom fields and configuration
+     *
+     * @param Context $context
      * @return void
-     * @throws \Exception
      */
-    private function removeAllShipperHQTables(): void
+    private function removeAllShipperHQTables(Context $context): void
     {
         /** @var Connection $connection */
         $connection = $this->container->get(Connection::class);
-        $databaseHandler = new DatabaseHandler($connection);
-        $databaseHandler->removeShipperHQTables();
+        
+        /** @var \Shopware\Core\Framework\DataAbstractionLayer\EntityRepository $customFieldSetRepository */
+        $customFieldSetRepository = $this->container->get('custom_field_set.repository');
+        
+        /** @var \Shopware\Core\Framework\DataAbstractionLayer\EntityRepository $customFieldRepository */
+        $customFieldRepository = $this->container->get('custom_field.repository');
+        
+        $databaseHandler = new DatabaseHandler($connection, $customFieldSetRepository, $customFieldRepository);
+        $databaseHandler->removeShipperHQTables($context);
     }
 
     private function createCustomFields(Context $context): void

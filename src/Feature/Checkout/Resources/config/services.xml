@@ -20,7 +20,7 @@
     <services>
       <!-- Rate Cache Services -->
       <service id="SHQ\RateProvider\Feature\Checkout\Service\SessionRateStorage">
-        <argument type="service" id="request_stack"/>
+        <argument type="service" id="cache.object"/>
       </service>
 
       <service id="SHQ\RateProvider\Feature\Checkout\Service\RateCacheKeyGenerator">
@@ -28,12 +28,12 @@
 
       <service id="SHQ\RateProvider\Feature\Checkout\Service\RateMatcher">
           <argument type="service" id="shipping_method.repository"/>
-          <argument type="service" id="monolog.logger"/>
+          <argument type="service" id="shipperhq.logger"/>
       </service>
 
       <service id="SHQ\RateProvider\Feature\Checkout\Service\ShipperHQRateProvider">
           <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
-          <argument type="service" id="monolog.logger"/>
+          <argument type="service" id="shipperhq.logger"/>
           <argument type="service" id="SHQ\RateProvider\Service\ShipperHQClient"/>
           <argument type="service" id="shipping_method.repository"/>
           <argument type="service" id="SHQ\RateProvider\Helper\Mapper"/>
@@ -44,7 +44,7 @@
           <argument type="service" id="SHQ\RateProvider\Feature\Checkout\Service\RateMatcher"/>
           <argument type="service" id="SHQ\RateProvider\Feature\Checkout\Service\RateCacheKeyGenerator"/>
           <argument type="service" id="SHQ\RateProvider\Feature\Checkout\Service\ShipperHQRateProvider"/>
-          <argument type="service" id="monolog.logger"/>
+          <argument type="service" id="shipperhq.logger"/>
       </service>
     </services>
 </container>
