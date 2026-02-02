@@ -106,14 +106,24 @@ class ShipperHQClient
                 $request->setSiteDetails($this->mapper->getSiteDetails());
             }
 
-            $result = $this->sendRequest($request, $this->config->getRatesUrl());
+            $apiUrl = $this->config->getRatesUrl();
+            $this->logger->debug('SHIPPERHQ: Making API request', [
+                'url' => $apiUrl,
+                'is_developer_mode' => $this->config->isDeveloperMode()
+            ]);
+
+            $result = $this->sendRequest($request, $apiUrl);
             
             $this->logger->debug('SHIPPERHQ: Full API response', [
                 'response' => $result
             ]);
 
             if (!isset($result['result'])) {
-                $this->logger->error('ShipperHQ API Error: No result returned');
+                if ($this->config->isDeveloperMode()) {
+                    $this->logger->error('ShipperHQ API Error: No result returned. Developer Mode is enabled and pointing to ' . $apiUrl . '. Please ensure the test server is running or disable Developer Mode.');
+                } else {
+                    $this->logger->error('ShipperHQ API Error: No result returned');
+                }
                 return null;
             }
 
@@ -146,9 +156,14 @@ class ShipperHQClient
             return $mappedResponse;
             
         } catch (\Exception $e) {
-            $this->logger->error('Error calling ShipperHQ API: ' . $e->getMessage(), [
-                'exception' => $e
-            ]);
+            $errorMessage = 'Error calling ShipperHQ API: ' . $e->getMessage();
+            $context = ['exception' => $e];
+            
+            if ($this->config->isDeveloperMode()) {
+                $errorMessage .= ' - Developer Mode is enabled and the API URL is set to ' . $this->config->getRatesUrl() . '. If you are not running a local test server, please disable Developer Mode in the plugin settings.';
+            }
+            
+            $this->logger->error($errorMessage, $context);
             return null;
         } 
     }

@@ -61,14 +61,21 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
 
     private function execute(Request $request, SalesChannelContext $context, Criteria $criteria): ShippingMethodRouteResponse
     {
-        $this->logger->debug('SHIPPERHQ: ShippingMethodRouteDecorator::load called');
-
         $response = $this->decorated->load($request, $context, $criteria);
+
+        // Only filter shipping methods when onlyAvailable. This prevents unnecessary API calls on non-checkout pages
+        $onlyAvailable = $request->query->getBoolean('onlyAvailable');
+
+        if (!$onlyAvailable) {
+            return $response;
+        }
+
         $shippingMethods = $response->getShippingMethods();
 
         $this->logShippingMethods($shippingMethods);
 
         $cart = $this->getCart($context);
+
         if (!$cart) {
             return $response;
         }

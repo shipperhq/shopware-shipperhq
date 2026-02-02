@@ -1,5 +1,10 @@
 # Change Log
 
+## [1.1.1](https://gitlab.com/ShipperHQ/Platform/shopware/shopware-shipperhq/tree/1.1.1) (2026-02-02)
+[Full Changelog](https://gitlab.com/ShipperHQ/Platform/shopware/shopware-shipperhq/-/compare/1.1.0...develop)
+ - [SHQ23-6734](https://webshopapps.atlassian.net/browse/SHQ23-6734) Improve logging around developer mode [\#26](https://gitlab.com/ShipperHQ/Platform/shopware/shopware-shipperhq/-/merge_requests/26) ([wsajosh](https://gitlab.com/wsajosh))
+ - [ENG26-224](https://webshopapps.atlassian.net/browse/ENG26-224) Stop unnecessary requests for shipping rates [\#25](https://gitlab.com/ShipperHQ/Platform/shopware/shopware-shipperhq/-/merge_requests/25) ([wsajosh](https://gitlab.com/wsajosh))
+
 ## [1.1.0](https://gitlab.com/ShipperHQ/Platform/shopware/shopware-shipperhq/tree/1.1.0) (2026-01-30)
 [Full Changelog](https://gitlab.com/ShipperHQ/Platform/shopware/shopware-shipperhq/-/compare/1.0.7...develop)
  - [SHQ23-6652](https://webshopapps.atlassian.net/browse/SHQ23-6652) Corrected composer translations. Removed dead code. Removed... [\#24](https://gitlab.com/ShipperHQ/Platform/shopware/shopware-shipperhq/-/merge_requests/24) ([wsajosh](https://gitlab.com/wsajosh))
