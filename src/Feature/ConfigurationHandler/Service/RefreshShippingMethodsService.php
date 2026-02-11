@@ -31,7 +31,8 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
         private EntityRepository $tagRepository,
         private EntityRepository $deliveryTimeRepository,
         private EntityRepository $ruleRepository,
-        private EntityRepository $salesChannelRepository
+        private EntityRepository $salesChannelRepository,
+        private EntityRepository $currencyRepository
     ) {}
 
     private function getShipperHQTagId(Context $context): string
@@ -55,6 +56,44 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
         
         $this->shipperhqTagId = $tagId;
         return $tagId;
+    }
+
+    /**
+     * ENG26-226 Create price matrix entries for all active currencies
+     * This is required for Shopware to consider the shipping method valid during checkout
+     * The actual price is overridden dynamically by DeliveryCalculatorDecorator
+     */
+    private function createPriceMatrixEntries(Context $context): array
+    {
+        $criteria = new Criteria();
+        $currencies = $this->currencyRepository->search($criteria, $context);
+        
+        // Build currency prices - all currencies must be in a single price entry
+        $currencyPrices = [];
+        foreach ($currencies as $currency) {
+            $currencyPrices[] = [
+                'currencyId' => $currency->getId(),
+                'net' => 0.00,    // Placeholder (overridden by decorator)
+                'gross' => 0.00,  // Placeholder (overridden by decorator)
+                'linked' => true, // Keep net/gross synchronized
+            ];
+        }
+        
+        // Create a single price matrix entry containing all currencies
+        $prices = [
+            [
+                'calculation' => 1, // 1 = per quantity, 2 = per weight, 3 = per price
+                'quantityStart' => 1,
+                'quantityEnd' => null, // null = unlimited
+                'currencyPrice' => $currencyPrices,
+            ]
+        ];
+        
+        $this->logger->info('SHIPPERHQ: Created price matrix entry with currencies', [
+            'currency_count' => count($currencyPrices)
+        ]);
+        
+        return $prices;
     }
 
     public function getAllowedMethods(): array
@@ -104,7 +143,8 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
                 ['id' => $tagId]
             ],
             'availabilityRuleId' => $availabilityRuleId,
-            'salesChannels' => $salesChannelIds
+            'salesChannels' => $salesChannelIds,
+            'prices' => $this->createPriceMatrixEntries($context)
         ];
 
         $this->logger->info('Creating shipping method with data: ', [
@@ -145,7 +185,8 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
             ],
             'tags' => [
                 ['id' => $tagId]
-            ]
+            ],
+            'prices' => $this->createPriceMatrixEntries($context)
         ];
 
         $this->logger->info('Updating shipping method with data: ', [

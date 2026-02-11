@@ -1,5 +1,9 @@
 # Change Log
 
+## [1.1.2](https://gitlab.com/ShipperHQ/Platform/shopware/shopware-shipperhq/tree/1.1.2) (2026-02-11)
+[Full Changelog](https://gitlab.com/ShipperHQ/Platform/shopware/shopware-shipperhq/-/compare/1.1.1...develop)
+ - [ENG26-226](https://webshopapps.atlassian.net/browse/ENG26-226) Fix issues with free shipping causing refresh of checkout [\#27](https://gitlab.com/ShipperHQ/Platform/shopware/shopware-shipperhq/-/merge_requests/27) ([wsajosh](https://gitlab.com/wsajosh))
+
 ## [1.1.1](https://gitlab.com/ShipperHQ/Platform/shopware/shopware-shipperhq/tree/1.1.1) (2026-02-02)
 [Full Changelog](https://gitlab.com/ShipperHQ/Platform/shopware/shopware-shipperhq/-/compare/1.1.0...develop)
  - [SHQ23-6734](https://webshopapps.atlassian.net/browse/SHQ23-6734) Improve logging around developer mode [\#26](https://gitlab.com/ShipperHQ/Platform/shopware/shopware-shipperhq/-/merge_requests/26) ([wsajosh](https://gitlab.com/wsajosh))

@@ -23,6 +23,7 @@
             <argument type="service" id="delivery_time.repository"/>
             <argument type="service" id="rule.repository"/>
             <argument type="service" id="sales_channel.repository"/>
+            <argument type="service" id="currency.repository"/>
         </service>
 
         <service id="SHQ\RateProvider\Feature\ConfigurationHandler\UseCase\TestConnectionUseCase">
