@@ -11,19 +11,17 @@
 
 namespace SHQ\RateProvider\Feature\Checkout\Service;
 
-use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Component\Cache\Adapter\TagAwareAdapterInterface;
 
-class SessionRateStorage 
+class SessionRateStorage
 {
     private const CACHE_KEY_PREFIX = 'shipperhq_shipping_rates';
     private const CACHE_TTL = 300; // 5 minutes
-    
-    private CacheInterface $cache;
+    private const CACHE_TAG = 'shipperhq_rates';
 
-    public function __construct(CacheInterface $cache)
-    {
-        $this->cache = $cache;
-    }
+    public function __construct(
+        private readonly TagAwareAdapterInterface $cache,
+    ) {}
 
     public function has(string $cacheKey): bool
     {
@@ -71,6 +69,7 @@ class SessionRateStorage
             $item = $this->cache->getItem($this->normalizeCacheKey($cacheKey));
             $item->set($cacheData);
             $item->expiresAfter(self::CACHE_TTL);
+            $item->tag(self::CACHE_TAG);
             $this->cache->save($item);
         } catch (\Exception $e) {
             // Silently fail if cache write fails
@@ -80,10 +79,7 @@ class SessionRateStorage
     public function clear(): void
     {
         try {
-            // Clear all ShipperHQ cache items by deleting items with our prefix
-            // Note: This requires tagged cache or manual tracking of keys
-            // For now, we'll rely on TTL expiration
-            $this->cache->clear();
+            $this->cache->invalidateTags([self::CACHE_TAG]);
         } catch (\Exception $e) {
             // Silently fail if cache clear fails
         }

@@ -14,23 +14,16 @@
            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
 
     <imports>
-        <import resource="../src/Feature/ConfigurationHandler/Resources/config/services.xml"/>
-        <import resource="../src/Feature/ProductData/Resources/config/services.xml"/>
-        <import resource="../src/Feature/Checkout/Resources/config/services.xml"/>
+        <import resource="../../Feature/ConfigurationHandler/Resources/config/services.xml"/>
+        <import resource="../../Feature/ProductData/Resources/config/services.xml"/>
+        <import resource="../../Feature/Checkout/Resources/config/services.xml"/>
     </imports>
 
     <services>
-        <!-- Custom logger to log to var/log/ShipperHQ.log -->
-        <service id="shipperhq.logger" class="Monolog\Logger">
-            <argument>shipperhq</argument>
-            <call method="pushHandler">
-                <argument type="service">
-                    <service class="Monolog\Handler\StreamHandler">
-                        <argument>%kernel.logs_dir%/ShipperHQ.log</argument>
-                        <argument>100</argument> <!-- DEBUG level -->
-                    </service>
-                </argument>
-            </call>
+        <!-- ConditionalDebugLogger wraps the base logger and gates debug() calls -->
+        <service id="SHQ\RateProvider\Logger\ConditionalDebugLogger">
+            <argument type="service" id="monolog.logger.shipperhq"/>
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
         </service>
 
         <service id="ShipperHQ\WS\Client\WebServiceClient" class="ShipperHQ\WS\Client\WebServiceClient" public="true">
@@ -43,18 +36,13 @@
             <argument type="service" id="ShipperHQ\Lib\Helper\Date"/>
         </service>
 
-        <service id="SHQ\RateProvider\Service\ShippingRateCalculator" public="true">
-            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
-            <argument type="service" id="shipperhq.logger"/>
-        </service>
-
         <service id="SHQ\RateProvider\Config\ShipperHQClientConfig" public="true">
             <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
         </service>
 
         <service id="SHQ\RateProvider\Service\ShipperHQClient" public="true">
             <argument type="service" id="SHQ\RateProvider\Config\ShipperHQClientConfig"/>
-            <argument type="service" id="shipperhq.logger"/>
+            <argument type="service" id="SHQ\RateProvider\Logger\ConditionalDebugLogger"/>
             <argument type="service" id="ShipperHQ\WS\Client\WebServiceClient"/>
             <argument type="service" id="ShipperHQ\Lib\Rate\Helper"/>
             <argument type="service" id="SHQ\RateProvider\Helper\Mapper"/>
@@ -62,7 +50,7 @@
 
         <service id="SHQ\RateProvider\Helper\Mapper">
             <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
-            <argument type="service" id="shipperhq.logger"/>
+            <argument type="service" id="SHQ\RateProvider\Logger\ConditionalDebugLogger"/>
             <argument type="service" id="product.repository"/>
             <argument type="service" id="SHQ\RateProvider\Config\ShipperHQClientConfig"/>
             <argument type="service" id="plugin.repository"/>

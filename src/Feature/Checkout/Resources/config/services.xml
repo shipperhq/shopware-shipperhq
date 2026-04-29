@@ -28,12 +28,12 @@
 
       <service id="SHQ\RateProvider\Feature\Checkout\Service\RateMatcher">
           <argument type="service" id="shipping_method.repository"/>
-          <argument type="service" id="shipperhq.logger"/>
+          <argument type="service" id="SHQ\RateProvider\Logger\ConditionalDebugLogger"/>
       </service>
 
       <service id="SHQ\RateProvider\Feature\Checkout\Service\ShipperHQRateProvider">
           <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
-          <argument type="service" id="shipperhq.logger"/>
+          <argument type="service" id="SHQ\RateProvider\Logger\ConditionalDebugLogger"/>
           <argument type="service" id="SHQ\RateProvider\Service\ShipperHQClient"/>
           <argument type="service" id="shipping_method.repository"/>
           <argument type="service" id="SHQ\RateProvider\Helper\Mapper"/>
@@ -44,7 +44,7 @@
           <argument type="service" id="SHQ\RateProvider\Feature\Checkout\Service\RateMatcher"/>
           <argument type="service" id="SHQ\RateProvider\Feature\Checkout\Service\RateCacheKeyGenerator"/>
           <argument type="service" id="SHQ\RateProvider\Feature\Checkout\Service\ShipperHQRateProvider"/>
-          <argument type="service" id="shipperhq.logger"/>
+          <argument type="service" id="SHQ\RateProvider\Logger\ConditionalDebugLogger"/>
       </service>
     </services>
 </container>

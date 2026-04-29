@@ -49,26 +49,16 @@ Shopware.Component.register('shq-api-test-button', {
             }
 
             this.isLoading = true;
-            this.ShipperHQApiService.testConnection({
-                apiKey: this.pluginConfig["SHQRateProvider.config.apiKey"],
-                authenticationCode: this.pluginConfig["SHQRateProvider.config.authenticationCode"]
-            }).then((response) => {
-                console.log(response);
-                if (response.success) {
-                    this.createNotificationSuccess({
-                        title: this.$tc('shqApiTestButton.success'),
-                        message: this.$tc('shqApiTestButton.successMessage')
-                    });
-                } else {
-                    this.createNotificationError({
-                        title: this.$tc('shqApiTestButton.error'),
-                        message: response.message || this.$tc('shqApiTestButton.errorMessage')
-                    });
-                }
+            this.ShipperHQApiService.testConnection().then(() => {
+                this.createNotificationSuccess({
+                    title: this.$tc('shqApiTestButton.success'),
+                    message: this.$tc('shqApiTestButton.successMessage')
+                });
             }).catch((error) => {
+                const detail = error?.response?.data?.errors?.[0]?.detail;
                 this.createNotificationError({
                     title: this.$tc('shqApiTestButton.error'),
-                    message: error.message || this.$tc('shqApiTestButton.errorMessage')
+                    message: detail || this.$tc('shqApiTestButton.errorMessage')
                 });
             }).finally(() => {
                 this.isLoading = false;

@@ -45,7 +45,7 @@ class ShipperHQRateProvider
     {
         try {
             if ($cart->getLineItems()->count() == 0) {
-                $this->logger->debug('No items in cart, aborting getting ShipperHQ rates');
+                $this->logger->info('No items in cart, aborting getting ShipperHQ rates');
                 return null;
             }
 
@@ -92,7 +92,7 @@ class ShipperHQRateProvider
             return $this->processRatesResponse($response, $shippingMethods);
 
         } catch (\Exception $e) {
-            $this->logger->error('Error fetching batch shipping rates: ' . $e->getMessage(), [
+            $this->logger->error('Error fetching batch shipping rates', [
                 'exception' => $e
             ]);
             return null;

@@ -1,4 +1,5 @@
-<?php
+<?php declare(strict_types=1);
+
 /*
  * ShipperHQ
  *
@@ -11,22 +12,33 @@
 
 namespace SHQ\RateProvider\Feature\ConfigurationHandler\UseCase;
 
-use Shopware\Core\Framework\Validation\DataBag\RequestDataBag;
+use Psr\Log\LoggerInterface;
+use SHQ\RateProvider\Exception\ShipperHQException;
+use SHQ\RateProvider\Service\ShipperHQClient;
 
 class TestConnectionUseCase
 {
-    public function __construct() {}
+    public function __construct(
+        private readonly ShipperHQClient $client,
+        private readonly LoggerInterface $logger,
+    ) {}
 
-    public function execute(RequestDataBag $dataBag): array
+    /**
+     * @throws ShipperHQException
+     */
+    public function execute(): void
     {
-        $apiKey = $dataBag->get('SHQRateProvider.config.apiKey');
+        try {
+            $allowedMethods = $this->client->getAllowedMethods();
+        } catch (ShipperHQException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            $this->logger->error('ShipperHQ connection test failed', ['exception' => $e]);
+            throw ShipperHQException::connectionTestFailed($e);
+        }
 
-        // // Optionally validate the key here or pass to domain service
-        // if ($apiKey && $this->handler->validateApiKey($apiKey)) {
-        //     return ['success' => true];
-        // }
-
-        // return ['success' => false, 'error' => 'Invalid API Key'];
-        return ['success' => true];
+        if (empty($allowedMethods)) {
+            throw ShipperHQException::noMethodsReturned();
+        }
     }
 }

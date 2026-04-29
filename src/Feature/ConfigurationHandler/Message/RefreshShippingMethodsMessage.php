@@ -1,4 +1,5 @@
-<?php
+<?php declare(strict_types=1);
+
 namespace SHQ\RateProvider\Feature\ConfigurationHandler\Message;
 
 /**

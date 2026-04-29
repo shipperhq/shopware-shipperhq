@@ -18,12 +18,9 @@ class ShipperHQClientConfig
     private const TEST_URL = 'http://localhost:8080/shipperhq-ws/v1/';
     private const LIVE_URL = 'https://api.shipperhq.com/v1/';
 
-    private SystemConfigService $systemConfig;
-
-    public function __construct(SystemConfigService $systemConfig)
-    {
-        $this->systemConfig = $systemConfig;
-    }
+    public function __construct(
+        private readonly SystemConfigService $systemConfig,
+    ) {}
 
     public function getGatewayUrl(): string
     {

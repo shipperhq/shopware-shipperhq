@@ -1,4 +1,5 @@
-<?php
+<?php declare(strict_types=1);
+
 /*
  * ShipperHQ
  *
@@ -19,60 +20,27 @@ use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 
 class DatabaseHandler
 {
-    private Connection $connection;
-    private EntityRepository $customFieldSetRepository;
-    private EntityRepository $customFieldRepository;
-
     public function __construct(
-        Connection $connection,
-        EntityRepository $customFieldSetRepository,
-        EntityRepository $customFieldRepository
-    ) {
-        $this->connection = $connection;
-        $this->customFieldSetRepository = $customFieldSetRepository;
-        $this->customFieldRepository = $customFieldRepository;
-    }
+        private readonly Connection $connection,
+        private readonly EntityRepository $customFieldSetRepository,
+    ) {}
 
     public function removeShipperHQTables(Context $context): void
     {
-        // Remove custom field sets
-        $this->removeCustomFields($context);
-        
+        // Remove custom field set (cascade-deletes associated custom fields)
+        $this->removeCustomFieldSet($context);
+
         // Remove system configuration
         $this->removeConfiguration();
     }
 
-    private function removeCustomFields(Context $context): void
+    private function removeCustomFieldSet(Context $context): void
     {
-        // Custom field names defined in CustomFieldService::createCustomFieldSets()
-        $customFieldNames = [
-            'shipperhq_shipping_group',
-            'shipperhq_warehouse',
-            'ship_separately',
-            'shipperhq_dim_group',
-        ];
-        
-        // Delete each custom field
-        foreach ($customFieldNames as $fieldName) {
-            $criteria = new Criteria();
-            $criteria->addFilter(new EqualsFilter('name', $fieldName));
-            
-            $customField = $this->customFieldRepository->search($criteria, $context)->first();
-            
-            if ($customField) {
-                $this->customFieldRepository->delete([
-                    ['id' => $customField->getId()]
-                ], $context);
-            }
-        }
-        
-        // Remove the custom field set
-        // Name is defined in CustomFieldService::createCustomFieldSets()
         $criteria = new Criteria();
         $criteria->addFilter(new EqualsFilter('name', 'shipperhq_product'));
-        
+
         $customFieldSet = $this->customFieldSetRepository->search($criteria, $context)->first();
-        
+
         if ($customFieldSet) {
             $this->customFieldSetRepository->delete([
                 ['id' => $customFieldSet->getId()]

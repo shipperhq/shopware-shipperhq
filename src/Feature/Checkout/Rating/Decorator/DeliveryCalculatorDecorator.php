@@ -117,7 +117,7 @@ class DeliveryCalculatorDecorator extends DeliveryCalculator
      */
     private function getShippingMethodTaxRules(ShippingMethodEntity $shippingMethod, SalesChannelContext $context, Cart $cart): TaxRuleCollection
     {
-        $this->logger->info('SHIPPERHQ: Getting tax rules for shipping method', [
+        $this->logger->debug('SHIPPERHQ: Getting tax rules for shipping method', [
             'method_id' => $shippingMethod->getId(),
             'method_name' => $shippingMethod->getName(),
             'tax_type' => $shippingMethod->getTaxType()
@@ -127,7 +127,7 @@ class DeliveryCalculatorDecorator extends DeliveryCalculator
         if ($shippingMethod->getTaxType() === ShippingMethodEntity::TAX_TYPE_FIXED) {
             $tax = $shippingMethod->getTax();
             if ($tax !== null) {
-                $this->logger->info('SHIPPERHQ: Using fixed tax rate', [
+                $this->logger->debug('SHIPPERHQ: Using fixed tax rate', [
                     'tax_id' => $tax->getId(),
                     'tax_rate' => $tax->getTaxRate()
                 ]);
@@ -143,7 +143,7 @@ class DeliveryCalculatorDecorator extends DeliveryCalculator
             }
         }
 
-        $this->logger->info('SHIPPERHQ: Using highest cart tax rate', [
+        $this->logger->debug('SHIPPERHQ: Using highest cart tax rate', [
             'highest_tax_rate' => $highestTaxRate
         ]);
 

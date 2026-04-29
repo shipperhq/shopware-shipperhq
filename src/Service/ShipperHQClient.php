@@ -31,11 +31,11 @@ use SHQ\RateProvider\Helper\Mapper;
 class ShipperHQClient
 {
     public function __construct(
-        private ShipperHQClientConfig $config,
-        private LoggerInterface $logger,
-        private WebServiceClient $client,
-        private Helper $shipperHQHelper,
-        private Mapper $mapper
+        private readonly ShipperHQClientConfig $config,
+        private readonly LoggerInterface $logger,
+        private readonly WebServiceClient $client,
+        private readonly Helper $shipperHQHelper,
+        private readonly Mapper $mapper,
     ) {}
 
     public function getAllowedMethods(): array
@@ -48,19 +48,19 @@ class ShipperHQClient
 
         if (is_object($result['debug'])) {
             $resultData = json_decode(json_encode($result), true);
-            $this->logger->error($resultData);
+            $this->logger->error('ShipperHQ API returned debug info as object', ['result' => $resultData]);
         }
 
         if (!isset($result['result'])) {
             $this->logger->error('ShipperHQ API Error: No result returned');
             return [];
         } else {
-            $this->logger->info('SHIPPERHQ: Response from getAllowedMethods call', ['result' => $result['result']]);
+            $this->logger->debug('SHIPPERHQ: Response from getAllowedMethods call', ['result' => $result['result']]);
         }
 
         $allowedShippingMethods = [];
         $shipper_response = $this->shipperHQHelper->object_to_array($result);
-        $this->logger->info('SHIPPERHQ: Formatted Response', ['shipper_response' => $shipper_response]);
+        $this->logger->debug('SHIPPERHQ: Formatted Response', ['shipper_response' => $shipper_response]);
 
         if (isset($shipper_response['result']) && 
             isset($shipper_response['result']['carrierMethods']) && 
@@ -119,11 +119,10 @@ class ShipperHQClient
             ]);
 
             if (!isset($result['result'])) {
-                if ($this->config->isDeveloperMode()) {
-                    $this->logger->error('ShipperHQ API Error: No result returned. Developer Mode is enabled and pointing to ' . $apiUrl . '. Please ensure the test server is running or disable Developer Mode.');
-                } else {
-                    $this->logger->error('ShipperHQ API Error: No result returned');
-                }
+                $this->logger->error('SHIPPERHQ: API returned no result', [
+                    'developer_mode' => $this->config->isDeveloperMode(),
+                    'url' => $apiUrl,
+                ]);
                 return null;
             }
 
@@ -156,14 +155,11 @@ class ShipperHQClient
             return $mappedResponse;
             
         } catch (\Exception $e) {
-            $errorMessage = 'Error calling ShipperHQ API: ' . $e->getMessage();
-            $context = ['exception' => $e];
-            
-            if ($this->config->isDeveloperMode()) {
-                $errorMessage .= ' - Developer Mode is enabled and the API URL is set to ' . $this->config->getRatesUrl() . '. If you are not running a local test server, please disable Developer Mode in the plugin settings.';
-            }
-            
-            $this->logger->error($errorMessage, $context);
+            $this->logger->error('SHIPPERHQ: Error calling API', [
+                'exception' => $e,
+                'developer_mode' => $this->config->isDeveloperMode(),
+                'url' => $this->config->getRatesUrl(),
+            ]);
             return null;
         } 
     }
@@ -187,12 +183,16 @@ class ShipperHQClient
         );
         
         $elapsed = microtime(true) - $initVal;
-        $this->logger->debug('ShipperHQ API request time: ' . $elapsed);
+        $this->logger->info('ShipperHQ API request completed', ['url' => $url ?? $this->config->getRatesUrl(), 'elapsed_seconds' => round($elapsed, 3)]);
 
-        // Keep these split into 3 messages, makes it much easier to read in the logs
-        $this->logger->info('ShipperHQ Request', ['request' => $request]);
-        $this->logger->info('ShipperHQ Response', ['response' => $result['result']]);
-        $this->logger->debug('ShipperHQ Debug Response', ['response' => $result['debug']]);
+        $sanitisedRequest = clone $request;
+        if (isset($sanitisedRequest->credentials)) {
+            $sanitisedRequest->credentials = clone $sanitisedRequest->credentials;
+            $sanitisedRequest->credentials->password = '***';
+        }
+        $this->logger->debug('ShipperHQ Request', ['request' => $sanitisedRequest]);
+        $this->logger->debug('ShipperHQ Response', ['response' => $result['result'] ?? null]);
+        $this->logger->debug('ShipperHQ Debug Response', ['response' => $result['debug'] ?? null]);
 
         return $result;
     }

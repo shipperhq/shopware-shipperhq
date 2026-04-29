@@ -12,51 +12,60 @@
 namespace SHQ\RateProvider\Feature\Checkout\PlaceOrder\Subscriber;
 
 use Psr\Log\LoggerInterface;
-use Shopware\Core\Checkout\Cart\Event\CheckoutOrderPlacedEvent;
-use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
+use Shopware\Core\Checkout\Cart\Order\CartConvertedEvent;
+use SHQ\RateProvider\Feature\Checkout\Service\ShippingRateCache;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 class OrderDeliverySubscriber implements EventSubscriberInterface
 {
     public function __construct(
-        private readonly EntityRepository $orderDeliveryRepository,
-        private readonly LoggerInterface  $logger,
+        private readonly ShippingRateCache $rateCache,
+        private readonly LoggerInterface $logger,
     ) {}
 
     public static function getSubscribedEvents(): array
     {
         return [
-            CheckoutOrderPlacedEvent::class => 'onOrderPlaced',
+            CartConvertedEvent::class => 'onCartConverted',
         ];
     }
 
-    public function onOrderPlaced(CheckoutOrderPlacedEvent $event): void
+    public function onCartConverted(CartConvertedEvent $event): void
     {
-        foreach ($event->getOrder()->getDeliveries() as $delivery) {
-            $shippingMethod = $delivery->getShippingMethod();
-            if (!$shippingMethod) {
+        $cart = $event->getCart();
+        $context = $event->getSalesChannelContext();
+        $convertedCart = $event->getConvertedCart();
+
+        $rates = $this->rateCache->getRates($cart, $context);
+
+        if (empty($rates) || empty($convertedCart['deliveries'])) {
+            return;
+        }
+
+        foreach ($convertedCart['deliveries'] as $key => $delivery) {
+            $shippingMethodId = $delivery['shippingMethodId'] ?? null;
+
+            if (!$shippingMethodId || !isset($rates[$shippingMethodId])) {
                 continue;
             }
 
-            $shippingMethodCustomFields = $shippingMethod->getCustomFields() ?? [];
-            $deliveryDate = $shippingMethodCustomFields['shipperhq_delivery_date'] ?? null;
-            $dispatchDate = $shippingMethodCustomFields['shipperhq_dispatch_date'] ?? null;
+            $rate = $rates[$shippingMethodId];
+            $deliveryDate = $rate['delivery_date'] ?? null;
+            $dispatchDate = $rate['dispatch_date'] ?? null;
 
             if (!$deliveryDate) {
                 continue;
             }
 
-            $newCustom = ($delivery->getCustomFields() ?? []) + [
-                'shipperhq_delivery_date' => $deliveryDate,
-                'shipperhq_dispatch_date' => $dispatchDate,
-            ];
-
-            $this->orderDeliveryRepository->update([
+            $convertedCart['deliveries'][$key]['customFields'] = array_merge(
+                $convertedCart['deliveries'][$key]['customFields'] ?? [],
                 [
-                    'id'           => $delivery->getId(),
-                    'customFields' => $newCustom,
-                ],
-            ], $event->getContext());
+                    'shipperhq_delivery_date' => $deliveryDate,
+                    'shipperhq_dispatch_date' => $dispatchDate,
+                ]
+            );
         }
+
+        $event->setConvertedCart($convertedCart);
     }
 }

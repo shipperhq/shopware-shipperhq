@@ -19,7 +19,6 @@ use Shopware\Core\Checkout\Shipping\SalesChannel\AbstractShippingMethodRoute;
 use Shopware\Core\Checkout\Shipping\SalesChannel\ShippingMethodRouteResponse;
 use Shopware\Core\Checkout\Shipping\ShippingMethodCollection;
 use Shopware\Core\Checkout\Shipping\ShippingMethodEntity;
-use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use SHQ\RateProvider\Feature\Checkout\Service\ShippingRateCache;
@@ -35,7 +34,6 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
         private readonly RequestStack $requestStack,
         private readonly CartService $cartService,
         private readonly ShippingRateCache $rateCache,
-        private readonly EntityRepository $shippingMethodRepository,
     ) {}
 
     public function getDecorated(): AbstractShippingMethodRoute
@@ -131,7 +129,6 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
     {
         $removedCount = 0;
         $rates = $this->rateCache->getRates($cart, $context);
-        $updates = [];
 
         // We didn't get any rates, but we still filter otherwise we end up showing a load of
         // invalid rates to the customer; They could potentially check out without paying shipping.
@@ -158,24 +155,12 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
                 $customFields['shipperhq_delivery_date'] = $rates[$shippingMethod->getId()]['delivery_date'];
                 $customFields['shipperhq_dispatch_date'] = $rates[$shippingMethod->getId()]['dispatch_date'];
                 $shippingMethod->setCustomFields($customFields);
-
-                // Add to updates array
-                $updates[] = [
-                    'id' => $shippingMethod->getId(),
-                    'customFields' => $customFields
-                ];
             }
-        }
-
-        // Persist the custom fields
-        if (!empty($updates)) {
-            $this->shippingMethodRepository->update($updates, $context->getContext());
         }
 
         $this->logger->debug('SHIPPERHQ: Filtered shipping methods', [
             'filtered_methods_count' => $shippingMethods->count(),
-            'removed_methods_count' => $removedCount,
-            'updated_methods_count' => count($updates)
+            'removed_methods_count' => $removedCount
         ]);
     }
 

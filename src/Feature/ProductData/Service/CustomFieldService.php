@@ -11,6 +11,7 @@
 
 namespace SHQ\RateProvider\Feature\ProductData\Service;
 
+use Doctrine\DBAL\Connection;
 use Shopware\Core\Defaults;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
@@ -20,15 +21,16 @@ use Shopware\Core\System\CustomField\CustomFieldTypes;
 
 class CustomFieldService
 {
-    private EntityRepository $customFieldSetRepository;
-
-    public function __construct(EntityRepository $customFieldSetRepository)
-    {
-        $this->customFieldSetRepository = $customFieldSetRepository;
-    }
+    public function __construct(
+        private readonly EntityRepository $customFieldSetRepository,
+        private readonly EntityRepository $customFieldRepository,
+        private readonly Connection $connection,
+    ) {}
 
     public function createCustomFieldSets(Context $context): void
     {
+        $this->migrateShipSeparatelyField($context);
+
         // Check if custom field sets already exist
         $criteria = new Criteria();
         $criteria->addFilter(new EqualsFilter('name', 'shipperhq_product'));
@@ -82,7 +84,7 @@ class CustomFieldService
                             ]
                         ],
                         [
-                            'name' => 'ship_separately',
+                            'name' => 'shipperhq_ship_separately',
                             'type' => CustomFieldTypes::BOOL,
                             'config' => [
                                 'label' => [
@@ -122,5 +124,38 @@ class CustomFieldService
                 ]
             ], $context);
         }
+    }
+
+    /**
+     * Migrate the old non-namespaced 'ship_separately' custom field
+     * to 'shipperhq_ship_separately'. Runs on install/update so existing
+     * installs get the rename automatically.
+     */
+    private function migrateShipSeparatelyField(Context $context): void
+    {
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('name', 'ship_separately'));
+        $oldField = $this->customFieldRepository->search($criteria, $context)->first();
+
+        if ($oldField === null) {
+            return;
+        }
+
+        // Rename the custom field definition
+        $this->customFieldRepository->update([
+            ['id' => $oldField->getId(), 'name' => 'shipperhq_ship_separately'],
+        ], $context);
+
+        // Migrate product data: rename JSON key in custom_fields
+        $this->connection->executeStatement("
+            UPDATE product
+            SET custom_fields = JSON_SET(
+                JSON_REMOVE(custom_fields, '$.ship_separately'),
+                '$.shipperhq_ship_separately',
+                JSON_EXTRACT(custom_fields, '$.ship_separately')
+            )
+            WHERE custom_fields IS NOT NULL
+            AND JSON_EXTRACT(custom_fields, '$.ship_separately') IS NOT NULL
+        ");
     }
 }

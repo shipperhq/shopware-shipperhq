@@ -18,16 +18,10 @@ use Shopware\Core\System\SalesChannel\SalesChannelContext;
 
 class RateMatcher
 {
-    private EntityRepository $shippingMethodRepository;
-    private LoggerInterface $logger;
-
     public function __construct(
-        EntityRepository $shippingMethodRepository,
-        LoggerInterface $logger
-    ) {
-        $this->shippingMethodRepository = $shippingMethodRepository;
-        $this->logger = $logger;
-    }
+        private readonly EntityRepository $shippingMethodRepository,
+        private readonly LoggerInterface $logger,
+    ) {}
 
     public function findRateForMethod(string $shippingMethodId, array $rates, SalesChannelContext $context): ?float
     {
@@ -100,11 +94,12 @@ class RateMatcher
     private function matchByTechnicalName($shippingMethod, array $rates): ?float
     {
         $technicalName = $shippingMethod->getTechnicalName();
-        if (!str_starts_with($technicalName, 'shq')) {
+        $prefix = 'shipperhq_';
+        if (!str_starts_with($technicalName, $prefix)) {
             return null;
         }
 
-        $parts = explode('-', substr($technicalName, 3));
+        $parts = explode('-', substr($technicalName, strlen($prefix)), 2);
         if (count($parts) !== 2) {
             return null;
         }

@@ -1,4 +1,5 @@
-<?php
+<?php declare(strict_types=1);
+
 /*
  * ShipperHQ
  *
@@ -25,14 +26,14 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
     private ?string $shipperhqTagId = null;
 
     public function __construct(
-        private LoggerInterface $logger,
-        private ShipperHQClient $apiClient,
-        private EntityRepository $shippingMethodRepository,
-        private EntityRepository $tagRepository,
-        private EntityRepository $deliveryTimeRepository,
-        private EntityRepository $ruleRepository,
-        private EntityRepository $salesChannelRepository,
-        private EntityRepository $currencyRepository
+        private readonly LoggerInterface $logger,
+        private readonly ShipperHQClient $apiClient,
+        private readonly EntityRepository $shippingMethodRepository,
+        private readonly EntityRepository $tagRepository,
+        private readonly EntityRepository $deliveryTimeRepository,
+        private readonly EntityRepository $ruleRepository,
+        private readonly EntityRepository $salesChannelRepository,
+        private readonly EntityRepository $currencyRepository,
     ) {}
 
     private function getShipperHQTagId(Context $context): string
@@ -89,8 +90,8 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
             ]
         ];
         
-        $this->logger->info('SHIPPERHQ: Created price matrix entry with currencies', [
-            'currency_count' => count($currencyPrices)
+        $this->logger->debug('SHIPPERHQ: Created price matrix entry with currencies', [
+            'currency_count' => count($currencyPrices),
         ]);
         
         return $prices;
@@ -100,7 +101,7 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
     {
         $this->logger->info('Getting allowed methods from ShipperHQ');
         $newAllowedMethods = $this->apiClient->getAllowedMethods();
-        $this->logger->info('SHIPPERHQ: Allowed methods: ' . print_r($newAllowedMethods, true));
+        $this->logger->debug('SHIPPERHQ: Allowed methods retrieved', ['count' => count($newAllowedMethods)]);
         return $newAllowedMethods;
     }
 
@@ -117,7 +118,7 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
         string $methodDescription,
         Context $context
     ): void {
-        $this->logger->info('Creating shipping method: ' . $methodDescription);
+        $this->logger->debug('SHIPPERHQ: Creating shipping method', ['description' => $methodDescription]);
         $id = Uuid::randomHex();
         
         $deliveryTimeId = $this->getDeliveryTimeId($context);
@@ -131,7 +132,7 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
             'active' => true,
             'description' => '',
             'deliveryTimeId' => $deliveryTimeId,
-            'technicalName' => $methodId,
+            'technicalName' => 'shipperhq_' . $methodId,
             'customFields' => [
                 'shipperhq_method_id' => $methodId,
                 'shipperhq_method_code' => $newAllowedMethod['methodCode'] ?? '',
@@ -147,11 +148,11 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
             'prices' => $this->createPriceMatrixEntries($context)
         ];
 
-        $this->logger->info('Creating shipping method with data: ', [
+        $this->logger->debug('SHIPPERHQ: Creating shipping method', [
             'method_id' => $id,
             'name' => $carrierTitleMethodName,
             'sales_channels' => count($salesChannelIds),
-            'availability_rule_id' => $availabilityRuleId
+            'availability_rule_id' => $availabilityRuleId,
         ]);
 
         $this->shippingMethodRepository->create([$data], $context);
@@ -165,7 +166,7 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
         string $methodDescription,
         Context $context
     ): void {
-        $this->logger->info('Updating shipping method: ' . $methodDescription);
+        $this->logger->debug('SHIPPERHQ: Updating shipping method', ['description' => $methodDescription]);
         
         $deliveryTimeId = $this->getDeliveryTimeId($context);
         $tagId = $this->getShipperHQTagId($context);
@@ -175,7 +176,7 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
             'name' => $carrierTitleMethodName ?? 'ShipperHQ Method',
             'description' => '',
             'deliveryTimeId' => $deliveryTimeId,
-            'technicalName' => $methodId,
+            'technicalName' => 'shipperhq_' . $methodId,
             'customFields' => [
                 'shipperhq_method_id' => $methodId,
                 'shipperhq_method_code' => $newAllowedMethod['methodCode'] ?? '',
@@ -189,7 +190,7 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
             'prices' => $this->createPriceMatrixEntries($context)
         ];
 
-        $this->logger->info('Updating shipping method with data: ', [
+        $this->logger->debug('SHIPPERHQ: Updating shipping method', [
             'method_id' => $id,
             'name' => $carrierTitleMethodName
         ]);
@@ -199,18 +200,21 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
 
     public function deactivateObsoleteShippingMethods(array $shipperhqMethods, array $activeMethodIds, Context $context): void
     {
-        $this->logger->info('Checking for obsolete shipping methods');
-        $this->logger->info('Active method IDs: ' . implode(', ', $activeMethodIds));
-        
+        $this->logger->debug('SHIPPERHQ: Checking for obsolete shipping methods', [
+            'active_method_ids' => $activeMethodIds,
+        ]);
+
         $deactivatedCount = 0;
 
         foreach ($shipperhqMethods as $method) {
             $customFields = $method->getCustomFields();
             $methodId = $customFields['shipperhq_method_id'] ?? '';
-            $methodName = $method->getName();
 
             if (!in_array($methodId, $activeMethodIds)) {
-                $this->logger->info('Deactivating obsolete shipping method: ' . $methodName . ' (ID: ' . $methodId . ')');
+                $this->logger->debug('SHIPPERHQ: Deactivating obsolete shipping method', [
+                    'method_name' => $method->getName(),
+                    'method_id' => $methodId,
+                ]);
                 $this->shippingMethodRepository->update([[
                     'id' => $method->getId(),
                     'active' => false
@@ -218,74 +222,56 @@ class RefreshShippingMethodsService implements RefreshShippingMethodsServiceInte
                 $deactivatedCount++;
             }
         }
-        
-        $this->logger->info('Deactivated ' . $deactivatedCount . ' obsolete shipping methods');
+
+        $this->logger->info('SHIPPERHQ: Deactivated obsolete shipping methods', [
+            'deactivated_count' => $deactivatedCount,
+        ]);
     }
+
+    private const DELIVERY_TIME_NAME = 'shipperhq_standard_delivery_time';
 
     private function getDeliveryTimeId(Context $context): ?string
     {
         $criteria = new Criteria();
-        $criteria->addFilter(new EqualsFilter('min', 0));
-        $criteria->addFilter(new EqualsFilter('max', 0));
-        $criteria->addFilter(new EqualsFilter('unit', DeliveryTimeEntity::DELIVERY_TIME_DAY));
-        
+        $criteria->addFilter(new EqualsFilter('name', self::DELIVERY_TIME_NAME));
+
         $deliveryTime = $this->deliveryTimeRepository->search($criteria, $context)->first();
-        
+
         if ($deliveryTime !== null) {
             return $deliveryTime->getId();
         }
-        
-        // If no delivery time found, create a default one
+
         $deliveryTimeId = Uuid::randomHex();
         $this->deliveryTimeRepository->create([[
             'id' => $deliveryTimeId,
             'min' => 1,
             'max' => 3,
             'unit' => DeliveryTimeEntity::DELIVERY_TIME_DAY,
-            'name' => 'Standard Delivery',
+            'name' => self::DELIVERY_TIME_NAME,
         ]], $context);
-        
+
         return $deliveryTimeId;
     }
 
+    private const AVAILABILITY_RULE_NAME = 'shipperhq_always_available';
+
     private function getAvailabilityRuleId(Context $context): string
     {
-        // Find the 'Cart >= 0' rule by name
-        $ruleCriteria = new Criteria();
-        $ruleCriteria->addFilter(new EqualsFilter('name', 'Cart >= 0'));
-        $ruleId = $this->ruleRepository->searchIds($ruleCriteria, $context)->firstId();
-        
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('name', self::AVAILABILITY_RULE_NAME));
+        $ruleId = $this->ruleRepository->searchIds($criteria, $context)->firstId();
+
         if ($ruleId !== null) {
             return $ruleId;
         }
-        
-        // If not found, try to find any rule
-        $ruleCriteria = new Criteria();
-        $ruleCriteria->setLimit(1);
-        $ruleId = $this->ruleRepository->searchIds($ruleCriteria, $context)->firstId();
-        
-        if ($ruleId !== null) {
-            return $ruleId;
-        }
-        
-        // If no rule exists, create a new one
+
         $ruleId = Uuid::randomHex();
-        $ruleData = [
+        $this->ruleRepository->create([[
             'id' => $ruleId,
-            'name' => 'All customers',
+            'name' => self::AVAILABILITY_RULE_NAME,
             'priority' => 0,
-            'description' => 'Rule for all customers',
-            'payload' => null,
-            'invalid' => false,
-            'areas' => null,
-            'moduleTypes' => null,
-            'customFields' => null,
-            'createdAt' => new \DateTimeImmutable(),
-            'updatedAt' => new \DateTimeImmutable()
-        ];
-        
-        $this->ruleRepository->create([$ruleData], $context);
-        
+        ]], $context);
+
         return $ruleId;
     }
 

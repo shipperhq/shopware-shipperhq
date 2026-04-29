@@ -21,12 +21,10 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 #[AsCommand(name: 'shq:clear-shipping-rate-cache', description: 'Clears the ShipperHQ shipping rate cache')]
 class ClearShippingRateCacheCommand extends Command
 {
-    private ShippingRateCache $rateCache;
-
-    public function __construct(ShippingRateCache $rateCache)
-    {
+    public function __construct(
+        private readonly ShippingRateCache $rateCache,
+    ) {
         parent::__construct();
-        $this->rateCache = $rateCache;
     }
 
     protected function configure(): void

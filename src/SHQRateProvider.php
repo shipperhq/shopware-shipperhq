@@ -20,6 +20,7 @@ use Shopware\Core\Framework\Plugin\Context\UninstallContext;
 use Shopware\Core\Framework\Plugin\Context\UpdateContext;
 use SHQ\RateProvider\Feature\ProductData\Service\CustomFieldService;
 use SHQ\RateProvider\Handlers\DatabaseHandler;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
 
 class SHQRateProvider extends Plugin
 {
@@ -32,6 +33,24 @@ class SHQRateProvider extends Plugin
     {
         return true;
     }
+
+    public function build(ContainerBuilder $container): void
+    {
+        parent::build($container);
+
+        $container->prependExtensionConfig('monolog', [
+            'channels' => ['shipperhq'],
+            'handlers' => [
+                'shipperhq' => [
+                    'type' => 'stream',
+                    'path' => '%kernel.logs_dir%/shipperhq.log',
+                    'level' => 'debug',
+                    'channels' => ['shipperhq'],
+                ],
+            ],
+        ]);
+    }
+
     public function boot(): void
     {
         parent::boot();
@@ -62,23 +81,19 @@ class SHQRateProvider extends Plugin
      */
     private function removeAllShipperHQTables(Context $context): void
     {
-        /** @var Connection $connection */
-        $connection = $this->container->get(Connection::class);
-        
-        /** @var \Shopware\Core\Framework\DataAbstractionLayer\EntityRepository $customFieldSetRepository */
-        $customFieldSetRepository = $this->container->get('custom_field_set.repository');
-        
-        /** @var \Shopware\Core\Framework\DataAbstractionLayer\EntityRepository $customFieldRepository */
-        $customFieldRepository = $this->container->get('custom_field.repository');
-        
-        $databaseHandler = new DatabaseHandler($connection, $customFieldSetRepository, $customFieldRepository);
+        $databaseHandler = new DatabaseHandler(
+            $this->container->get(Connection::class),
+            $this->container->get('custom_field_set.repository'),
+        );
         $databaseHandler->removeShipperHQTables($context);
     }
 
     private function createCustomFields(Context $context): void
     {
         $customFieldService = new CustomFieldService(
-            customFieldSetRepository: $this->container->get('custom_field_set.repository')
+            $this->container->get('custom_field_set.repository'),
+            $this->container->get('custom_field.repository'),
+            $this->container->get(Connection::class),
         );
         $customFieldService->createCustomFieldSets($context);
     }

@@ -1,4 +1,5 @@
-<?php
+<?php declare(strict_types=1);
+
 namespace SHQ\RateProvider\Feature\ConfigurationHandler\Message;
 
 use Shopware\Core\Framework\Context;
@@ -12,7 +13,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 class RefreshShippingMethodsHandler
 {
     public function __construct(
-        private RefreshShippingMethodsServiceInterface $refreshShippingMethodsService
+        private readonly RefreshShippingMethodsServiceInterface $refreshShippingMethodsService,
     ) {}
 
     public function __invoke(RefreshShippingMethodsMessage $message): void

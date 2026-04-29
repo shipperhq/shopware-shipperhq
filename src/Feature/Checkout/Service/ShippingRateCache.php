@@ -20,25 +20,13 @@ class ShippingRateCache
 {
     private const CACHE_LIFETIME = 300; // 5 minutes in seconds
 
-    private SessionRateStorage $rateStorage;
-    private RateMatcher $rateMatcher;
-    private RateCacheKeyGenerator $rateCacheKeyGenerator;
-    private ShipperHQRateProvider $rateProvider;
-    private LoggerInterface $logger;
-
     public function __construct(
-        SessionRateStorage $rateStorage,
-        RateMatcher $rateMatcher,
-        RateCacheKeyGenerator $rateCacheKeyGenerator,
-        ShipperHQRateProvider $rateProvider,
-        LoggerInterface $logger
-    ) {
-        $this->rateStorage = $rateStorage;
-        $this->rateMatcher = $rateMatcher;
-        $this->rateCacheKeyGenerator = $rateCacheKeyGenerator;
-        $this->rateProvider = $rateProvider;
-        $this->logger = $logger;
-    }
+        private readonly SessionRateStorage $rateStorage,
+        private readonly RateMatcher $rateMatcher,
+        private readonly RateCacheKeyGenerator $rateCacheKeyGenerator,
+        private readonly ShipperHQRateProvider $rateProvider,
+        private readonly LoggerInterface $logger,
+    ) {}
 
     /**
      * Get cached rates or fetch new ones if needed
@@ -76,15 +64,12 @@ class ShippingRateCache
      */
     public function getRateForMethod(string $shippingMethodId, Cart $cart, SalesChannelContext $context): ?float
     {
-        $this->logger->info('SHIPPERHQ: Getting rate for method', ['method_id' => $shippingMethodId]);
-        
+        $this->logger->debug('SHIPPERHQ: Getting rate for method', ['method_id' => $shippingMethodId]);
+
         $rates = $this->getRates($cart, $context);
-        
-        $this->logger->info('SHIPPERHQ: Got rates for method', [
-            'method_id' => $shippingMethodId,
-            'rates' => $rates
-        ]);
-        
+
+        $this->logger->debug('SHIPPERHQ: Got rates for method', ['method_id' => $shippingMethodId, 'rate_count' => count($rates)]);
+
         return $this->rateMatcher->findRateForMethod($shippingMethodId, $rates, $context);
     }
 

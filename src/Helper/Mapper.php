@@ -49,7 +49,7 @@ class Mapper
      * @var array
      */
     protected static array $customAttributeNames = [
-        'shipperhq_shipping_group', 'freight_class', 'ship_separately',
+        'shipperhq_shipping_group', 'freight_class', 'shipperhq_ship_separately',
         'shipperhq_dim_group', 'must_ship_freight', 'shipperhq_warehouse', 'shipperhq_hs_code'
     ];
 
@@ -61,32 +61,26 @@ class Mapper
         'height', 'width', 'length'
     ];
 
+    /**
+     * Maps Shopware custom field names to ShipperHQ API attribute names where they differ.
+     */
+    private static array $fieldToApiNameMap = [
+        'shipperhq_ship_separately' => 'ship_separately',
+    ];
+
     protected static string $origin = 'shipperhq_warehouse';
     protected static string $location = 'shipperhq_location';
 
-    private SystemConfigService $systemConfig;
-    private LoggerInterface $logger;
-    private EntityRepository $productRepository;
-    private ShipperHQClientConfig $shipperHQClientConfig;
-    private string $shopwareVersion;
-    private EntityRepository $pluginRepository;
     private ?string $pluginVersionCache = null;
 
     public function __construct(
-        SystemConfigService $systemConfig,
-        LoggerInterface $logger,
-        EntityRepository $productRepository,
-        ShipperHQClientConfig $shipperHQClientConfig,
-        EntityRepository $pluginRepository,
-        string $shopwareVersion,
-    ) {
-        $this->systemConfig = $systemConfig;
-        $this->logger = $logger;
-        $this->productRepository = $productRepository;
-        $this->shipperHQClientConfig = $shipperHQClientConfig;
-        $this->pluginRepository = $pluginRepository;
-        $this->shopwareVersion = $shopwareVersion;
-    }
+        private readonly SystemConfigService $systemConfig,
+        private readonly LoggerInterface $logger,
+        private readonly EntityRepository $productRepository,
+        private readonly ShipperHQClientConfig $shipperHQClientConfig,
+        private readonly EntityRepository $pluginRepository,
+        private readonly string $shopwareVersion,
+    ) {}
 
     /**
      * Create a ShipperHQ rate request from Shopware cart data
@@ -224,21 +218,50 @@ class Mapper
      */
     private function getFormattedItems(array $items, SalesChannelContext $context, bool $useChild = false): array
     {
+        // Filter to product line items only
+        $productLineItems = [];
+        $productIds = [];
+        foreach ($items as $item) {
+            if ($item instanceof LineItem && $item->getType() === LineItem::PRODUCT_LINE_ITEM_TYPE) {
+                $productLineItems[] = $item;
+                $productIds[] = $item->getReferencedId();
+            }
+        }
+
+        if (empty($productIds)) {
+            return [];
+        }
+
+        // Batch-fetch all products in one query
+        $products = $this->getProductsByIds($productIds, $context);
+
+        // Batch-fetch parent products for variants
+        $parentIds = [];
+        foreach ($products as $product) {
+            $parentId = $product->getParentId();
+            if ($parentId !== null && !isset($products[$parentId])) {
+                $parentIds[$parentId] = true;
+            }
+        }
+        $parentProducts = !empty($parentIds)
+            ? $this->getProductsByIds(array_keys($parentIds), $context)
+            : [];
+
         $formattedItems = [];
         $counter = 0;
 
-        foreach ($items as $item) {
-            if (!$item instanceof LineItem || $item->getType() !== LineItem::PRODUCT_LINE_ITEM_TYPE) {
+        foreach ($productLineItems as $item) {
+            $productId = $item->getReferencedId();
+            $product = $products[$productId] ?? null;
+
+            if (!$product) {
                 continue;
             }
 
             $counter++;
-            $productId = $item->getReferencedId();
-            $product = $this->getProduct($productId, $context);
-            
-            if (!$product) {
-                continue;
-            }
+            $parentProduct = $product->getParentId() !== null
+                ? ($parentProducts[$product->getParentId()] ?? $products[$product->getParentId()] ?? null)
+                : null;
 
             $warehouseDetails = $this->getWarehouseDetails($product);
             $pickupLocationDetails = $this->getPickupLocationDetails($product);
@@ -272,7 +295,7 @@ class Mapper
             $formattedItem->discountedStorePrice = $discountedPrice;
             $formattedItem->discountedTaxInclBasePrice = $discountedPrice;
             $formattedItem->discountedTaxInclStorePrice = $discountedPrice;
-            $formattedItem->attributes = $this->populateAttributes($product, $context);
+            $formattedItem->attributes = $this->populateAttributes($product, $context, $parentProduct);
             $formattedItem->baseCurrency = $currency;
             $formattedItem->packageCurrency = $currency;
             $formattedItem->storeBaseCurrency = $currency;
@@ -291,18 +314,16 @@ class Mapper
     }
 
     /**
-     * Get product entity by ID
+     * Batch-fetch product entities by IDs in a single query.
      *
-     * @param string $productId
-     * @param SalesChannelContext $salesChannelContext
-     * @return ProductEntity|null
+     * @param array<string> $productIds
+     * @return array<string, ProductEntity> keyed by product ID
      */
-    private function getProduct(string $productId, SalesChannelContext $salesChannelContext): ?ProductEntity
+    private function getProductsByIds(array $productIds, SalesChannelContext $context): array
     {
-        $criteria = new Criteria([$productId]);
-        $criteria->addAssociation('customFields');
-        
-        return $this->productRepository->search($criteria, $salesChannelContext->getContext())->first();
+        $criteria = new Criteria($productIds);
+
+        return $this->productRepository->search($criteria, $context->getContext())->getElements();
     }
 
     /**
@@ -343,7 +364,7 @@ class Mapper
      * @param SalesChannelContext $context
      * @return array
      */
-    protected function populateAttributes(ProductEntity $product, SalesChannelContext $context): array
+    protected function populateAttributes(ProductEntity $product, SalesChannelContext $context, ?ProductEntity $parentProduct = null): array
     {
         $attributes = [];
         // Measurement units feature was added in Shopware 6.7.3.0
@@ -352,8 +373,8 @@ class Mapper
         
         // Add standard attributes
         foreach (self::$stdAttributeNames as $attributeName) {
-            $value = $this->getProductAttribute($product, $attributeName);
-            
+            $value = $this->getProductAttribute($product, $attributeName, $parentProduct);
+
             if ($value !== null) {
                 // Convert dimensions from storage unit (mm) to configured unit
                 if ($supportsMeasurementUnits && in_array($attributeName, ['height', 'width', 'length'], true)) {
@@ -365,19 +386,20 @@ class Mapper
                 ];
             }
         }
-        
+
         // Add custom attributes
         foreach (self::$customAttributeNames as $attributeName) {
-            $value = $this->getProductAttribute($product, $attributeName);
-            
+            $value = $this->getProductAttribute($product, $attributeName, $parentProduct);
+
             if ($value !== null) {
                 // Convert boolean values for certain attributes
-                if (in_array(strtolower($attributeName), ['ship_separately', 'must_ship_freight']) && is_string($value)) {
+                if (in_array($attributeName, ['shipperhq_ship_separately', 'must_ship_freight']) && is_string($value)) {
                     $value = strtolower($value) === 'yes' || $value === '1' || $value === 'true';
                 }
-                
+
+                $apiName = self::$fieldToApiNameMap[$attributeName] ?? $attributeName;
                 $attributes[] = [
-                    'name' => $attributeName,
+                    'name' => $apiName,
                     'value' => $value
                 ];
             }
@@ -466,34 +488,28 @@ class Mapper
      * @param string $attributeName
      * @return mixed|null
      */
-    private function getProductAttribute(ProductEntity $product, string $attributeName)
+    private function getProductAttribute(ProductEntity $product, string $attributeName, ?ProductEntity $parentProduct = null)
     {
         // First check if it's a standard product property
         $getterMethod = 'get' . ucfirst($attributeName);
         if (method_exists($product, $getterMethod)) {
             return $product->$getterMethod();
         }
-        
+
         // Then check custom fields
         $customFields = $product->getCustomFields();
         if ($customFields && isset($customFields[$attributeName])) {
             return $customFields[$attributeName];
         }
 
-        // Fallback to parent product custom fields via separate repository call
-        $parentId = $product->getParentId();
-        if ($parentId) {
-            $criteria = new Criteria([$parentId]);
-            // customFields is a field, not an association; no need to addAssociation here
-            $parent = $this->productRepository->search($criteria, Context::createDefaultContext())->first();
-            if ($parent) {
-                $parentCustomFields = $parent->getCustomFields();
-                if ($parentCustomFields && isset($parentCustomFields[$attributeName])) {
-                    return $parentCustomFields[$attributeName];
-                }
+        // Fallback to pre-fetched parent product custom fields
+        if ($parentProduct !== null) {
+            $parentCustomFields = $parentProduct->getCustomFields();
+            if ($parentCustomFields && isset($parentCustomFields[$attributeName])) {
+                return $parentCustomFields[$attributeName];
             }
         }
-        
+
         return null;
     }
 

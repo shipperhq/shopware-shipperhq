@@ -1,4 +1,5 @@
-<?php
+<?php declare(strict_types=1);
+
 /*
  * ShipperHQ
  *
@@ -12,7 +13,6 @@
 namespace SHQ\RateProvider\Feature\ConfigurationHandler\Controller;
 
 use Psr\Log\LoggerInterface;
-use Shopware\Core\Framework\Validation\DataBag\RequestDataBag;
 use SHQ\RateProvider\Feature\ConfigurationHandler\UseCase\RefreshShippingMethodsUseCase;
 use SHQ\RateProvider\Feature\ConfigurationHandler\UseCase\TestConnectionUseCase;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -22,22 +22,36 @@ use Symfony\Component\Routing\Annotation\Route;
 class ApiConnectorController
 {
     public function __construct(
-        private LoggerInterface $logger,
-        private TestConnectionUseCase $testConnection,
-        private RefreshShippingMethodsUseCase $refreshMethods
+        private readonly LoggerInterface $logger,
+        private readonly TestConnectionUseCase $testConnection,
+        private readonly RefreshShippingMethodsUseCase $refreshMethods,
     ) {}
 
-    #[Route(path: '/api/_action/shq-api-test/test-connection', name: 'api.action.shq-api-test.test-connection', methods: ['POST'])]
-    public function testConnection(RequestDataBag $dataBag): JsonResponse
+    #[Route(
+        path: '/api/_action/shq-api-test/test-connection',
+        name: 'api.action.shq-api-test.test-connection',
+        methods: ['POST'],
+        defaults: ['_acl' => ['system_config:read']],
+    )]
+    public function testConnection(): JsonResponse
     {
-        $this->logger->info('SHIPPERHQ: testConnection', ['data' => $dataBag->all()]);
-        return new JsonResponse($this->testConnection->execute($dataBag));
+        $this->logger->info('SHIPPERHQ: testConnection requested');
+        $this->testConnection->execute();
+
+        return new JsonResponse(['success' => true]);
     }
 
-    #[Route(path: '/api/_action/shq-api-test/refresh-methods', name: 'api.action.shq-api-test.refresh-methods', methods: ['POST'])]
-    public function refreshMethods(RequestDataBag $dataBag): JsonResponse
+    #[Route(
+        path: '/api/_action/shq-api-test/refresh-methods',
+        name: 'api.action.shq-api-test.refresh-methods',
+        methods: ['POST'],
+        defaults: ['_acl' => ['system_config:update']],
+    )]
+    public function refreshMethods(): JsonResponse
     {
-        $this->logger->info('SHIPPERHQ: refreshMethods', ['data' => $dataBag->all()]);
-        return new JsonResponse($this->refreshMethods->execute($dataBag));
+        $this->logger->info('SHIPPERHQ: refreshMethods requested');
+        $methods = $this->refreshMethods->execute();
+
+        return new JsonResponse(['success' => true, 'methods' => $methods]);
     }
 }
